@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/** Internet Archive search; downloads require a declared permissive license and verified audio response. */
+/** Internet Archive search; downloads require an explicit permissive licence and verified audio response. */
 class InternetArchiveProvider(
     private val client: OkHttpClient = OkHttpClient.Builder().callTimeout(25, TimeUnit.SECONDS).build()
 ) : MusicSearchProvider {
@@ -53,15 +53,25 @@ class InternetArchiveProvider(
             .execute().use { if (it.isSuccessful) it.body?.string() else null } ?: return null
         val root = JSONObject(raw)
         val metadata = root.optJSONObject("metadata") ?: JSONObject()
-        val license = listOf("licenseurl", "license", "rights").map { metadata.optString(it) }.firstOrNull { it.isNotBlank() }.orEmpty()
-        val permitted = isPermissiveLicense(license)
+        val license = listOf("licenseurl", "license", "rights")
+            .map { metadata.optString(it) }
+            .firstOrNull { it.isNotBlank() }
+        val permitted = LicensePolicy.isDownloadPermitted(license.orEmpty())
         val files = root.optJSONArray("files") ?: return null
         val mp3 = (0 until files.length()).mapNotNull { files.optJSONObject(it) }.firstOrNull {
             it.optString("name").endsWith(".mp3", true) && it.optString("source") != "metadata" && it.optString("private") != "true"
         }
         val filename = mp3?.optString("name")?.takeIf(String::isNotBlank)
         val direct = if (permitted && filename != null) verifyAudioUrl(id, filename) else null
-        return MusicResult(title, creator, providerName, "https://archive.org/details/$id", direct, direct != null && permitted)
+        return MusicResult(
+            title = title,
+            artist = creator,
+            sourceName = providerName,
+            pageUrl = "https://archive.org/details/$id",
+            directAudioUrl = direct,
+            isPermittedDownload = direct != null && permitted,
+            license = license
+        )
     }
 
     private fun verifyAudioUrl(id: String, filename: String): String? {
@@ -72,13 +82,5 @@ class InternetArchiveProvider(
                 if (response.isSuccessful && (type.startsWith("audio/") || type.contains("mpeg"))) url.toString() else null
             }
         } catch (_: IOException) { null }
-    }
-
-    private fun isPermissiveLicense(value: String): Boolean {
-        val v = value.lowercase()
-        return v.contains("creativecommons.org/publicdomain/zero") ||
-            v.contains("creativecommons.org/publicdomain/mark") ||
-            v.contains("creativecommons.org/licenses/by/") ||
-            v.contains("creativecommons.org/licenses/by-sa/")
     }
 }

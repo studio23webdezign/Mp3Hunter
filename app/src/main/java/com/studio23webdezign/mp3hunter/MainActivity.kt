@@ -253,6 +253,9 @@ private fun TrackCard(
                 }
             }
             Text(result.sourceName, color = Muted, fontSize = 10.sp)
+            result.license?.takeIf { it.isNotBlank() }?.let { license ->
+                Text("LICENCE / RIGHTS: $license", color = Muted, fontSize = 9.sp)
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (result.directAudioUrl != null) {
                     OutlinedButton(onClick = onPlay, modifier = Modifier.weight(1f)) {

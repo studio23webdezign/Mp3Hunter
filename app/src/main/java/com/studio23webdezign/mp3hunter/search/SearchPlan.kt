@@ -22,7 +22,8 @@ data class MusicResult(
     val sourceName: String,
     val pageUrl: String,
     val directAudioUrl: String? = null,
-    val isPermittedDownload: Boolean = false
+    val isPermittedDownload: Boolean = false,
+    val license: String? = null
 ) {
     val canDownload: Boolean
         get() = isPermittedDownload && directAudioUrl?.startsWith("https://") == true
