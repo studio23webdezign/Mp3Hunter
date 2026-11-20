@@ -28,6 +28,8 @@ import com.studio23webdezign.mp3hunter.data.TrackDatabase
 import com.studio23webdezign.mp3hunter.recognition.ArtistMatcher
 import com.studio23webdezign.mp3hunter.search.AudioDownloadManager
 import com.studio23webdezign.mp3hunter.search.InternetArchiveProvider
+import com.studio23webdezign.mp3hunter.search.WikimediaCommonsProvider
+import com.studio23webdezign.mp3hunter.search.MultiSourceMusicSearchProvider
 import com.studio23webdezign.mp3hunter.search.MusicResult
 import com.studio23webdezign.mp3hunter.search.SearchPlanner
 import com.studio23webdezign.mp3hunter.search.TrackPlayback
@@ -60,7 +62,7 @@ private fun Mp3HunterApp(context: Context) {
     var selectedTab by remember { mutableStateOf("SEARCH") }
     val scope = rememberCoroutineScope()
     val matcher = remember { ArtistMatcher(ArtistCatalog.artists) }
-    val provider = remember { InternetArchiveProvider() }
+    val provider = remember { MultiSourceMusicSearchProvider(listOf(InternetArchiveProvider(), WikimediaCommonsProvider())) }
     val database = remember { Room.databaseBuilder(context, TrackDatabase::class.java, "mp3-hunter.db").build() }
     val dao = remember { database.trackDao() }
     val playback = remember { TrackPlayback(context) }
