@@ -5,7 +5,7 @@ Sprints are tracked against committed implementation. A green CI run is required
 1. **Foundation — implemented:** Kotlin/Compose Android app, Gradle build and GitHub Actions CI.
 2. **Artist intelligence — implemented:** canonical names, aliases, typo matching, suggestions and unit tests.
 3. **Search foundation — implemented:** normalized search plan, equal South African/international market plan, provider interface and download eligibility model.
-4. **Catalogue integration — initial provider implemented:** Internet Archive Advanced Search + metadata lookup, MP3 filename discovery, explicit Creative Commons CC0/CC BY/CC BY-SA allowlist, HTTPS audio HEAD verification and Android DownloadManager queue. Coverage is limited to items available in that catalogue.
+4. **Catalogue integration — initial provider implemented:** Internet Archive Advanced Search + metadata lookup, MP3 filename discovery, public MP3 filename discovery, HTTPS audio HEAD verification and Android DownloadManager queue. Licence metadata is shown when supplied but does not gate the download control. Coverage is limited to items available in that catalogue.
 5. **Listening and personal library — baseline implemented:** Media3 playback for verified audio, Room-backed favourites and recent search history.
 6. **QA and packaging — CI configured:** unit tests, debug APK build and 14-day GitHub Actions artifact upload. Device QA, broader artist/catalogue coverage, signing configuration and release APK remain release-readiness tasks.
 
