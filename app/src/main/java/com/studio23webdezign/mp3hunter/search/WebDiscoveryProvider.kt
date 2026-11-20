@@ -76,11 +76,20 @@ class WebDiscoveryProvider(
                 if (!visited.add(normalized)) continue
                 val currentPage = if (normalized == indexed.url) page else fetchHtml(normalized) ?: continue
 
-                for (element in currentPage.select("a[href], audio[src], source[src]")) {
-                    val href = when (element.tagName().lowercase()) {
-                        "audio", "source" -> element.attr("abs:src")
-                        else -> element.attr("abs:href")
-                    }.trim()
+                // Direct audio URLs can be exposed in ordinary links, audio tags,
+                // lazy-load attributes and download widgets.
+                for (element in currentPage.select(
+                    "a[href], audio[src], source[src], [data-src], [data-url], [data-download], [data-audio], [data-mp3]"
+                )) {
+                    val href = sequenceOf(
+                        element.attr("abs:href"),
+                        element.attr("abs:src"),
+                        element.attr("abs:data-src"),
+                        element.attr("abs:data-url"),
+                        element.attr("abs:data-download"),
+                        element.attr("abs:data-audio"),
+                        element.attr("abs:data-mp3")
+                    ).firstOrNull { it.isNotBlank() }?.trim().orEmpty()
                     if (href.isBlank()) continue
                     val target = normalizeHttpUrl(href) ?: continue
                     val path = target.toHttpUrl().encodedPath.lowercase()
@@ -187,21 +196,58 @@ class WebDiscoveryProvider(
         }
     }
 
-    private fun verifyMp3(url: String): String? = try {
-        client.newCall(
-            Request.Builder().url(url).head()
-                .header("User-Agent", "MP3Hunter/1.0")
-                .build()
-        ).execute().use { response ->
-            val type = response.header("Content-Type").orEmpty().substringBefore(';').lowercase()
-            val disposition = response.header("Content-Disposition").orEmpty().lowercase()
-            if (response.isSuccessful && (type == "audio/mpeg" || type == "audio/mp3" ||
-                    (type == "application/octet-stream" && url.substringBefore('?').endsWith(".mp3", true)) ||
-                    disposition.contains(".mp3"))) url else null
-        }
-    } catch (_: IOException) {
-        null
+    private fun verifyMp3(url: String): String? {
+        // Prefer HEAD to avoid downloading audio during discovery. Some legitimate
+        // hosts reject HEAD, so retry with a tiny ranged GET instead.
+        val head = runCatching {
+            client.newCall(
+                Request.Builder().url(url).head()
+                    .header("User-Agent", "MP3Hunter/1.0")
+                    .build()
+            ).execute().use { response ->
+                val type = response.header("Content-Type").orEmpty().substringBefore(';').lowercase()
+                val disposition = response.header("Content-Disposition").orEmpty().lowercase()
+                response.isSuccessful && isAudioMime(type, url, disposition)
+            }
+        }.getOrDefault(false)
+        if (head) return url
+
+        return runCatching {
+            client.newCall(
+                Request.Builder().url(url).get()
+                    .header("User-Agent", "MP3Hunter/1.0")
+                    .header("Range", "bytes=0-15")
+                    .build()
+            ).execute().use { response ->
+                val type = response.header("Content-Type").orEmpty().substringBefore(';').lowercase()
+                val disposition = response.header("Content-Disposition").orEmpty().lowercase()
+                if (!response.isSuccessful || !isAudioMime(type, url, disposition)) return@use null
+                val prefix = response.body?.byteStream()?.use { input ->
+                    ByteArray(3).also { buffer ->
+                        var offset = 0
+                        while (offset < buffer.size) {
+                            val count = input.read(buffer, offset, buffer.size - offset)
+                            if (count < 0) break
+                            offset += count
+                        }
+                    }
+                }
+                val looksLikeMp3 = prefix != null && (
+                    prefix.size >= 3 && prefix[0] == 0x49.toByte() &&
+                        prefix[1] == 0x44.toByte() && prefix[2] == 0x33.toByte() ||
+                    prefix.size >= 2 && prefix[0] == 0xFF.toByte() &&
+                        (prefix[1].toInt() and 0xE0) == 0xE0
+                )
+                if (looksLikeMp3 || type == "audio/mpeg" || type == "audio/mp3") response.request.url.toString()
+                else null
+            }
+        }.getOrNull()
     }
+
+    private fun isAudioMime(type: String, url: String, disposition: String): Boolean =
+        type == "audio/mpeg" || type == "audio/mp3" ||
+            (type == "application/octet-stream" && url.substringBefore('?').endsWith(".mp3", true)) ||
+            disposition.contains(".mp3")
 
     private fun isLikelyDirectoryOrListing(url: String, label: String): Boolean {
         val path = url.toHttpUrl().encodedPath.lowercase()
