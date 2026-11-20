@@ -59,6 +59,7 @@ class OpenverseProvider(
                     if (checked >= 12) break
                     val item = results.optJSONObject(index) ?: continue
                     val direct = item.optString("url").takeIf { it.startsWith("https://") } ?: continue
+                    if (isExcludedUrl(direct)) continue
                     checked++
 
                     val verified = verifyMp3(direct) ?: continue
@@ -66,6 +67,7 @@ class OpenverseProvider(
                         .takeIf { it.startsWith("https://") }
                         ?: item.optString("detail_url").takeIf { it.startsWith("https://") }
                         ?: direct
+                    if (isExcludedUrl(landing)) continue
                     val source = item.optString("provider").takeIf { it.isNotBlank() }
                     val rights = item.optString("license").takeIf { it.isNotBlank() }
 
@@ -85,6 +87,14 @@ class OpenverseProvider(
         } catch (_: IOException) {
             emptyList()
         }
+    }
+
+    private fun isExcludedUrl(url: String): Boolean = try {
+        val host = url.toHttpUrl().host.lowercase()
+        host == "archive.org" || host.endsWith(".archive.org") ||
+            host == "commons.wikimedia.org" || host.endsWith(".commons.wikimedia.org")
+    } catch (_: Exception) {
+        true
     }
 
     private fun verifyMp3(url: String): String? = try {
