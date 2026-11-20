@@ -228,9 +228,11 @@ private fun Mp3HunterApp(context: Context) {
                                                         page = page + 1
                                                     )
                                                 )
-                                                results = (results + next).distinctBy { it.directAudioUrl ?: it.pageUrl }
+                                                val merged = (results + next).distinctBy { it.directAudioUrl ?: it.pageUrl }
+                                                val addedNewResults = merged.size > results.size
+                                                results = merged
                                                 page += 1
-                                                canLoadMore = next.isNotEmpty()
+                                                canLoadMore = next.isNotEmpty() && addedNewResults
                                                 if (next.isEmpty()) message = "No more results in the connected public catalogues."
                                                 next.forEach { track ->
                                                     withContext(Dispatchers.IO) {
