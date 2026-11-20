@@ -30,7 +30,7 @@ class WikimediaCommonsProvider(
 
         buildList {
             terms.forEach { term -> addAll(searchTerm(term)) }
-        }.distinctBy { it.directAudioUrl ?: it.pageUrl }.take(12)
+        }.distinctBy { it.directAudioUrl ?: it.pageUrl }.take(30)
     }
 
     private fun searchTerm(query: String): List<MusicResult> {
@@ -39,7 +39,7 @@ class WikimediaCommonsProvider(
             .addQueryParameter("generator", "search")
             .addQueryParameter("gsrsearch", query)
             .addQueryParameter("gsrnamespace", "6")
-            .addQueryParameter("gsrlimit", "20")
+            .addQueryParameter("gsrlimit", "50")
             .addQueryParameter("prop", "imageinfo")
             .addQueryParameter("iiprop", "url|mime|extmetadata")
             .addQueryParameter("format", "json")
