@@ -11,7 +11,7 @@ object LicensePolicy {
         if (normalized.isBlank()) return false
 
         val compact = normalized
-            .replace(" ", "")
+            .replace(Regex("\\s+"), "-")
             .replace("_", "-")
 
         return compact.contains("creativecommons.org/publicdomain/zero/") ||
