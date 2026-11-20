@@ -4,7 +4,7 @@ An Android music-discovery app with equal search opportunities for South African
 
 ## Current build
 - Kotlin + Jetpack Compose.
-- Expanded South African artist catalogue covering Amapiano, Maskandi, Gqom, House, Gospel, Kwaito, traditional music, SA Hip-Hop and more.
+- Expanded South African artist catalogue covering Amapiano, Maskandi, Gqom, House, Gospel, Kwaito, Xitsonga/Tshivenda/Sepedi artists, Afrikaans music, traditional music and SA Hip-Hop.
 - High-confidence artist spelling recognition with curated aliases; known aliases are searched across all three catalogue providers.
 - Internet Archive searches exact artist/title phrases and token combinations, with genre-subject discovery for explicit South African genre searches.
 - Concurrent public-catalogue search across Internet Archive, Wikimedia Commons and Openverse.
