@@ -51,9 +51,9 @@ internal object Mp3PageMetadataExtractor {
         var jsonTitle: String? = null
         var jsonArtist: String? = null
 
-        page.select("script[type=application/ld+json]").forEach { script ->
+        page.getElementsByTag("script").filter { it.attr("type").equals("application/ld+json", true) }.forEach { script ->
             runCatching {
-                val raw = script.data().ifBlank { script.html() }
+                val raw = script.data().ifBlank { script.html() }.trim().removePrefix("\uFEFF")
                 fun inspect(value: Any?) {
                     when (value) {
                         is JSONObject -> {
