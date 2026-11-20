@@ -22,7 +22,7 @@ object SearchPlanner {
             normalizedQuery = effective,
             markets = listOf(MusicMarket.SOUTH_AFRICAN, MusicMarket.INTERNATIONAL),
             alternateQueries = alternateQueries
-                .map(String::trim)
+                .map { it.trim() }
                 .filter { it.isNotBlank() && !it.equals(effective, ignoreCase = true) }
                 .distinctBy { it.lowercase() }
                 .take(3)
