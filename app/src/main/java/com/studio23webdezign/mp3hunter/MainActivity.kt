@@ -151,7 +151,7 @@ private fun Mp3HunterApp(context: Context) {
                                             if (found.isEmpty()) message = "No matching audio records were found in the connected public catalogue. Try a track title or a broader search."
                                             found.forEach { track ->
                                                 withContext(Dispatchers.IO) {
-                                                    dao.upsert(SavedTrack(
+                                                    dao.recordSearch(SavedTrack(
                                                         pageUrl = track.pageUrl,
                                                         title = track.title,
                                                         artist = track.artist,
