@@ -8,8 +8,8 @@ A mobile-first music discovery tool with equal priority for South African and in
 - South African genres include Amapiano, Maskandi, Gqom, House, Afro House, Deep House, 3-step, Kwaito, Gospel, Xitsonga/Shangaan disco, Mbaqanga, Isicathamiya, Afro-pop, traditional music, SA Hip-Hop and SA R&B.
 - Artist aliases and typo-tolerant recognition; high-confidence corrections only. Ambiguous matches are suggestions, not silent substitutions.
 - Show source provenance and metadata.
-- Offer a download action only for a verified direct audio URL where downloading is permitted.
-- Never bypass DRM, authentication, paywalls, CAPTCHAs or access controls.
+- Offer a download action when the source exposes a direct public HTTPS MP3 URL and the server confirms an audio response; rights metadata may be displayed but is not an in-app gate. Users are responsible for checking applicable source terms and rights.
+- Never bypass DRM, authentication, paywalls, CAPTCHAs or access controls. Public accessibility does not itself grant copyright permission.
 - Local search history, favourites, queue, playback and offline library.
 
 ## Architecture
