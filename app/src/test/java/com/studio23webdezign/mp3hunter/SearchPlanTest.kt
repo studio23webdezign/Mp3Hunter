@@ -29,4 +29,12 @@ class SearchPlanTest {
         assertFalse(allowed.copy(isDownloadAvailable = false).canDownload)
         assertFalse(allowed.copy(directAudioUrl = "http://example.com/track.mp3").canDownload)
     }
+    @Test fun supportsExplicitSearchPages() {
+        val plan = SearchPlanner.create("Amapiano", page = 3)
+        assertEquals(3, plan.page)
+    }
+    @Test fun searchPageNeverFallsBelowOne() {
+        val plan = SearchPlanner.create("Amapiano", page = 0)
+        assertEquals(1, plan.page)
+    }
 }
