@@ -81,15 +81,19 @@ internal object Mp3PageMetadataExtractor {
                 }
 
                 val artistMatch = Regex(
-                    """(?is)"byArtist"\s*:\s*(?:\{[^{}]*"name"\s*:\s*"([^"]+)"|"(.*?)")"""
+                    """(?is)"byArtist"\\s*:\\s*(?:\\{.*?"name"\\s*:\\s*"([^"]+)"|"(.*?)")"""
                 ).find(raw)?.let { match ->
                     match.groupValues[1].ifBlank { match.groupValues[2] }
                 }
+                // MusicRecording's own name appears before byArtist in common JSON-LD.
                 val recordingMatch = Regex(
-                    """(?is)"@type"\s*:\s*"MusicRecording"[^}]*"name"\s*:\s*"([^"]+)""""
+                    """(?is)"@type"\\s*:\\s*"MusicRecording".*?"name"\\s*:\\s*"([^"]+)""""
+                ).find(raw)?.groupValues?.getOrNull(1)
+                val firstStructuredName = Regex(
+                    """"name"\\s*:\\s*"([^"]+)""""
                 ).find(raw)?.groupValues?.getOrNull(1)
                 jsonArtist = jsonArtist ?: artistMatch
-                jsonTitle = jsonTitle ?: recordingMatch
+                jsonTitle = jsonTitle ?: recordingMatch ?: firstStructuredName
             }
 
         return (jsonTitle ?: metaTitle) to (jsonArtist ?: metaArtist)
