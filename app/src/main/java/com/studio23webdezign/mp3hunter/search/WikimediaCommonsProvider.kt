@@ -22,7 +22,7 @@ class WikimediaCommonsProvider(
 
     override suspend fun search(plan: SearchPlan): List<MusicResult> = withContext(Dispatchers.IO) {
         val terms = (listOf(plan.normalizedQuery) + plan.alternateQueries)
-            .map(String::trim)
+            .map { it.trim() }
             .filter { it.isNotBlank() }
             .distinctBy { it.lowercase() }
             .take(4)
