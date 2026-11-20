@@ -3,9 +3,9 @@
 Sprints are tracked against committed implementation. A green CI run is required before calling the code validated.
 
 1. **Foundation — implemented:** Kotlin/Compose Android app, Gradle build and GitHub Actions CI.
-2. **Artist intelligence — implemented:** canonical names, aliases, typo matching, suggestions and unit tests.
-3. **Search foundation — implemented:** normalized search plan, South African/international search lanes, provider interface and direct MP3 download eligibility model.
-4. **Catalogue coverage — expanded in code, awaiting CI:** Internet Archive search plus metadata resolution; Wikimedia Commons MP3 search; Openverse anonymous audio search; concurrent multi-provider aggregation; broader South African subject discovery that does not require local tags on the artist/title match.
+2. **Artist intelligence — expanded in code, awaiting CI:** curated South African and international artist names, aliases, high-confidence matching and unit tests for Maskandi/Gqom/local spelling variants.
+3. **Search foundation — expanded in code, awaiting CI:** normalized search plan now carries curated alternate artist spellings to providers.
+4. **Catalogue coverage — expanded in code, awaiting CI:** Internet Archive phrase + token matching and genre-subject discovery; Wikimedia Commons and Openverse now query artist aliases; concurrent multi-provider aggregation.
 5. **Listening and personal library — baseline implemented:** Media3 playback for discovered audio, Room-backed favourites and recent search history.
 6. **QA and packaging — CI configured:** unit tests, debug APK build and GitHub Actions artifact upload. Device QA, catalogue coverage research, signing configuration and release APK remain release-readiness tasks.
 
@@ -19,7 +19,7 @@ Sprints are tracked against committed implementation. A green CI run is required
 
 ## Remaining work
 
-- Run CI on the expanded provider implementation and fix any build/test failures.
+- Run CI on the expanded artist and provider implementation and fix any build/test failures.
 - Add result pagination, caching, request throttling and more robust cancellation/error handling.
 - Research additional catalogue providers with meaningful South African coverage and no paid API dependency.
 - Add provider attribution/rights presentation where source metadata is supplied.
