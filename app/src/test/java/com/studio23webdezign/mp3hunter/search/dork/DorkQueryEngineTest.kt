@@ -16,6 +16,8 @@ class DorkQueryEngineTest {
         assertTrue(values.any { it.contains("ext:mp3") })
         assertTrue(values.any { it.contains("intitle:\"index of\"") })
         assertTrue(values.any { it.contains("inurl:mp3") })
+        assertTrue(values.all { it.contains("-site:archive.org") })
+        assertTrue(values.all { it.contains("-site:commons.wikimedia.org") })
     }
 
     @Test
@@ -50,6 +52,8 @@ class DorkQueryEngineTest {
             DorkSearchRequest("Kabza De Small", market = DorkMarket.SOUTH_AFRICAN)
         )
         assertTrue(queries.any { it.value.contains("site:co.za") })
+        assertTrue(queries.any { it.value.contains("site:org.za") })
+        assertTrue(queries.any { it.value.contains("site:net.za") })
         assertTrue(queries.any { it.market == DorkMarket.SOUTH_AFRICAN })
     }
 
