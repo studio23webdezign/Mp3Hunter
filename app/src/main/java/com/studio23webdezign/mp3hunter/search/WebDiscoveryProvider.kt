@@ -127,7 +127,8 @@ class WebDiscoveryProvider(
         }
     }
 
-    private fun fetchHtml(url: String) = try {
+    private fun fetchHtml(url: String): org.jsoup.nodes.Document? {
+        return try {
         client.newCall(
             Request.Builder().url(url)
                 .header("User-Agent", "MP3Hunter/1.0 (public audio link discovery)")
@@ -143,8 +144,9 @@ class WebDiscoveryProvider(
                 html.contains("checking your browser", true)) return null
             Jsoup.parse(html, url)
         }
-    } catch (_: Exception) {
-        null
+        } catch (_: Exception) {
+            null
+        }
     }
 
     private fun verifyMp3(url: String): String? = try {
