@@ -30,11 +30,14 @@ class InternetArchiveProvider(
     private fun searchMarket(query: String, southAfrican: Boolean, rows: Int): List<MusicResult> {
         val escaped = query.replace("\\", " ").replace("\"", " ").trim()
         val base = """mediatype:audio AND (title:"$escaped" OR creator:"$escaped")"""
-        val q = if (southAfrican) """$base AND (subject:"South Africa" OR subject:Amapiano OR subject:Maskandi OR subject:Gqom OR subject:Kwaito OR subject:"Afro House")""" else base
+        // Keep the local lane broad: many South African uploads are not tagged consistently.
+        // Add genre/country metadata as extra discovery paths instead of making them mandatory.
+        val localDiscovery = """(subject:"South Africa" OR subject:Amapiano OR subject:Maskandi OR subject:Gqom OR subject:Kwaito OR subject:"Afro House" OR subject:"South African music")"""
+        val q = if (southAfrican) """$base OR (mediatype:audio AND $localDiscovery)""" else base
         val url = "https://archive.org/advancedsearch.php".toHttpUrl().newBuilder()
             .addQueryParameter("q", q).addQueryParameter("fl[]", "identifier")
             .addQueryParameter("fl[]", "title").addQueryParameter("fl[]", "creator")
-            .addQueryParameter("rows", rows.toString()).addQueryParameter("output", "json").build()
+            .addQueryParameter("rows", rows.toString()).addQueryParameter("page", "1").addQueryParameter("output", "json").build()
         val raw = client.newCall(Request.Builder().url(url).header("User-Agent", "MP3Hunter/0.1 Android").build())
             .execute().use { if (it.isSuccessful) it.body?.string() else null } ?: return emptyList()
         val docs = JSONObject(raw).optJSONObject("response")?.optJSONArray("docs") ?: return emptyList()
