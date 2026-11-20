@@ -26,6 +26,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.studio23webdezign.mp3hunter.data.ArtistCatalog
+import com.studio23webdezign.mp3hunter.recognition.ArtistMatcher
 import com.studio23webdezign.mp3hunter.search.dork.DorkIntent
 import com.studio23webdezign.mp3hunter.search.dork.DorkMarket
 import com.studio23webdezign.mp3hunter.search.dork.DorkQuery
@@ -39,13 +41,18 @@ fun DorkSearchPanel(modifier: Modifier = Modifier) {
     var intent by remember { mutableStateOf(DorkIntent.GENERAL) }
     var market by remember { mutableStateOf(DorkMarket.BOTH) }
     val uriHandler = LocalUriHandler.current
-    val queries = remember(query, intent, market) {
-        if (query.isBlank()) emptyList()
+    val artistMatcher = remember { ArtistMatcher(ArtistCatalog.artists) }
+    val artistMatch = remember(query) { artistMatcher.match(query) }
+    val effectiveQuery = artistMatch?.artist?.canonicalName ?: query
+    val aliases = artistMatch?.artist?.aliases.orEmpty()
+    val queries = remember(effectiveQuery, aliases, intent, market) {
+        if (effectiveQuery.isBlank()) emptyList()
         else DorkQueryEngine.generate(
             DorkSearchRequest(
-                query = query,
+                query = effectiveQuery,
                 intent = intent,
                 market = market,
+                aliases = aliases,
                 maxQueries = 120
             )
         )
@@ -57,6 +64,13 @@ fun DorkSearchPanel(modifier: Modifier = Modifier) {
             "Generate ranked Google search combinations for artists, tracks, albums and genres.",
             style = MaterialTheme.typography.bodySmall
         )
+        if (artistMatch != null && query.isNotBlank()) {
+            Text(
+                "Artist recognised: ${artistMatch.artist.canonicalName}. Searching its known aliases too.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },
