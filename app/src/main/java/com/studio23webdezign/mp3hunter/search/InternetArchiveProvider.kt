@@ -20,9 +20,9 @@ class InternetArchiveProvider(
         val terms = (listOf(plan.normalizedQuery) + plan.alternateQueries)
             .distinctBy { it.lowercase() }
             .take(4)
-        val south = terms.flatMap { searchMarket(it, true, 4, plan.page) }
-            .distinctBy { it.pageUrl }.take(12)
-        val international = terms.flatMap { searchMarket(it, false, 4, plan.page) }
+        val south = terms.flatMap { searchMarket(it, true, 10, plan.page) }
+            .distinctBy { it.pageUrl }.take(30)
+        val international = terms.flatMap { searchMarket(it, false, 10, plan.page) }
             .distinctBy { it.pageUrl }.take(12)
 
         // Interleave the two discovery lanes so one catalogue segment cannot dominate the list.
