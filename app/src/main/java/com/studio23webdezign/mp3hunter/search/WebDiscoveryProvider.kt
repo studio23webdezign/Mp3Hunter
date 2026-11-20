@@ -172,7 +172,7 @@ class WebDiscoveryProvider(
 
     private fun normalizeHttpUrl(value: String): String? = try {
         val parsed = value.toHttpUrl()
-        if (parsed.isHttps || parsed.isHttp) parsed.newBuilder().fragment(null).build().toString() else null
+        parsed.newBuilder().fragment(null).build().toString()
     } catch (_: Exception) {
         null
     }
