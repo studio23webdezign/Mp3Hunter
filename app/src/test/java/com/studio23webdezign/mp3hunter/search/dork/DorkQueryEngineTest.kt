@@ -1,7 +1,6 @@
 package com.studio23webdezign.mp3hunter.search.dork
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -54,8 +53,12 @@ class DorkQueryEngineTest {
     }
 
     @Test
-    fun doesNotGenerateEmptyQueries() {
-        val queries = DorkQueryEngine.generate(DorkSearchRequest("   "))
-        assertFalse(queries.isNotEmpty())
+    fun rejectsBlankQueries() {
+        try {
+            DorkSearchRequest("   ")
+            throw AssertionError("Expected blank query to be rejected")
+        } catch (_: IllegalArgumentException) {
+            // Expected: blank input should be rejected before query generation.
+        }
     }
 }
