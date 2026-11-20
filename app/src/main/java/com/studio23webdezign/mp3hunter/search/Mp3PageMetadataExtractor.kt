@@ -61,15 +61,59 @@ internal object Mp3PageMetadataExtractor {
                                 value.opt("@type")?.toString().orEmpty()
                             if (type.contains("MusicRecording", true) || type.contains("MusicAlbum", true)) {
                                 jsonTitle = jsonTitle ?: value.optString("name").takeIf { it.isNotBlank() }
-                                val byArtist = value.opt("byArtist")
-                                jsonArtist = jsonArtist ?: when (byArtist) {
-                                    is JSONObject -> byArtist.optString("name").takeIf { it.isNotBlank() }
-                                    is JSONArray -> (0 until byArtist.length()).firstNotNullOfOrNull { index ->
-                                        byArtist.optJSONObject(index)?.optString("name")?.takeIf { it.isNotBlank() }
-                                    }
-                                    is String -> byArtist.takeIf { it.isNotBlank() }
-                                    else -> null
+                            }
+                            val byArtist = value.opt("byArtist")
+                            jsonArtist = jsonArtist ?: when (byArtist) {
+                                is JSONObject -> byArtist.optString("name").takeIf { it.isNotBlank() }
+                                is JSONArray -> (0 until byArtist.length()).firstNotNullOfOrNull { index ->
+                                    byArtist.optJSONObject(index)?.optString("name")?.takeIf { it.isNotBlank() }
                                 }
+                                is String -> byArtist.takeIf { it.isNotBlank() }
+                                else -> null
+                            }
+                            value.keys().forEach { key -> inspect(value.opt(key)) }
+                        }
+                        is JSONArray -> for (index in 0 until value.length()) inspect(value.opt(index))
+                    }
+                }
+                val parsed = org.json.JSONTokener(raw).nextValue()
+                inspect(parsed)
+            }
+        }
+        return (jsonTitle ?: title) to (jsonArtist ?: artist)
+    }
+
+    private fun firstMeta(page: Document, vararg keys: String): String? {
+        for (key in keys) {
+            val value = page.selectFirst("meta[property=$key], meta[name=$key]")?.attr("content")
+                ?.trim()?.takeIf { it.isNotBlank() }
+            if (value != null) return value
+        }
+        return null
+    }
+
+    private fun splitArtistAndTitle(value: String, fallbackArtist: String?): Pair<String, String>? {
+        val parts = value.substringBeforeLast('.', value).split(Regex("\\s+[-–—|]\\s+"), limit = 2)
+        if (parts.size != 2) return null
+        val left = cleanTitle(parts[0])
+        val right = cleanTitle(parts[1])
+        if (left.isBlank() || right.isBlank()) return null
+        return when {
+            fallbackArtist != null && left.equals(fallbackArtist, true) -> left to right
+            fallbackArtist != null && right.equals(fallbackArtist, true) -> right to left
+            else -> left to right
+        }
+    }
+
+    private fun cleanTitle(value: String): String =
+        value.replace(Regex("(?i)\\.mp3$"), "")
+            .replace(Regex("""\s*[-|_]\s*(official audio|official video|free download|download mp3).*""", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("""\s+"""), "")
+            .trim(' ', '-', '_', '|')
+
+    private fun pageMentions(page: Document, artist: String): Boolean =
+        (page.title() + " " + page.text().take(12_000)).contains(artist, ignoreCase = true)
+}
                             }
                             value.keys().forEach { key -> inspect(value.opt(key)) }
                         }
