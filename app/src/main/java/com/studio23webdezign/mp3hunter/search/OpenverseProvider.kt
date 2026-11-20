@@ -30,7 +30,7 @@ class OpenverseProvider(
 
         buildList {
             terms.forEach { term -> addAll(searchTerm(term, plan.page)) }
-        }.distinctBy { it.directAudioUrl ?: it.pageUrl }.take(12)
+        }.distinctBy { it.directAudioUrl ?: it.pageUrl }.take(30)
     }
 
     private fun searchTerm(query: String, page: Int): List<MusicResult> {
@@ -39,7 +39,7 @@ class OpenverseProvider(
             .addQueryParameter("category", "music")
             .addQueryParameter("extension", "mp3")
             .addQueryParameter("page", page.toString())
-            .addQueryParameter("page_size", "12")
+            .addQueryParameter("page_size", "30")
             .addQueryParameter("filter_dead", "true")
             .build()
 
@@ -56,7 +56,7 @@ class OpenverseProvider(
             buildList {
                 var checked = 0
                 for (index in 0 until results.length()) {
-                    if (checked >= 4) break
+                    if (checked >= 12) break
                     val item = results.optJSONObject(index) ?: continue
                     val direct = item.optString("url").takeIf { it.startsWith("https://") } ?: continue
                     checked++
