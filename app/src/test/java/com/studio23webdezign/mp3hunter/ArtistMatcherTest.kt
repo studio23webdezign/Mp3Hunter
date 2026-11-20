@@ -27,6 +27,17 @@ class ArtistMatcherTest {
         assertEquals("MFR Souls", matcher.match("MFR Souls")?.artist?.canonicalName)
     }
 
+    @Test fun recognisesRegionalSouthAfricanArtists() {
+        assertEquals("Makhadzi", matcher.match("Ndivhudzannyi Ralivhona")?.artist?.canonicalName)
+        assertEquals("King Monada", matcher.match("Khutso Steven Kgatle")?.artist?.canonicalName)
+        assertEquals("Benny Mayengani", matcher.match("Benny Mayengani")?.artist?.canonicalName)
+    }
+
+    @Test fun recognisesAfrikaansAndGospelArtists() {
+        assertEquals("Bok van Blerk", matcher.match("Bok van Blerk")?.artist?.canonicalName)
+        assertEquals("Ntokozo Mbambo", matcher.match("Ntokozo Mbambo")?.artist?.canonicalName)
+    }
+
     @Test fun suggestsSimilarArtistWhenNotConfident() {
         assertNotNull(matcher.suggestions("kabza de smal").firstOrNull())
     }
