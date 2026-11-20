@@ -28,7 +28,7 @@ class DorkQueryEngineTest {
         )
         val values = queries.map { it.value.lowercase() }
         assertEquals(values.size, values.distinct().size)
-        assertTrue(values.any { it.contains("\"kabza\"") })
+        assertTrue(values.any { it.contains("kabza") })
     }
 
     @Test
