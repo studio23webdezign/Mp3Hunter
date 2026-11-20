@@ -151,5 +151,5 @@ object ArtistCatalog {
         Artist("Rema"),
         Artist("Asake"),
         Artist("Ayra Starr")
-    )
+    ).distinctBy { it.canonicalName.lowercase() }
 }
