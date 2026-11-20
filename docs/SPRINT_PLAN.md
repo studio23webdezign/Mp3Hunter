@@ -4,22 +4,23 @@ Sprints are tracked against committed implementation. A green CI run is required
 
 1. **Foundation — implemented:** Kotlin/Compose Android app, Gradle build and GitHub Actions CI.
 2. **Artist intelligence — implemented:** canonical names, aliases, typo matching, suggestions and unit tests.
-3. **Search foundation — implemented:** normalized search plan, equal South African/international market plan, provider interface and download eligibility model.
-4. **Catalogue integration — initial provider implemented:** Internet Archive Advanced Search + metadata lookup, MP3 filename discovery, public MP3 filename discovery, HTTPS audio HEAD verification and Android DownloadManager queue. Licence metadata is shown when supplied but does not gate the download control. Coverage is limited to items available in that catalogue.
-5. **Listening and personal library — baseline implemented:** Media3 playback for verified audio, Room-backed favourites and recent search history.
-6. **QA and packaging — CI configured:** unit tests, debug APK build and 14-day GitHub Actions artifact upload. Device QA, broader artist/catalogue coverage, signing configuration and release APK remain release-readiness tasks.
+3. **Search foundation — implemented:** normalized search plan, South African/international search lanes, provider interface and direct MP3 download eligibility model.
+4. **Catalogue coverage — expanded in code, awaiting CI:** Internet Archive search plus metadata resolution; Wikimedia Commons MP3 search; concurrent multi-provider aggregation; broader South African subject discovery that does not require local tags on the artist/title match.
+5. **Listening and personal library — baseline implemented:** Media3 playback for discovered audio, Room-backed favourites and recent search history.
+6. **QA and packaging — CI configured:** unit tests, debug APK build and GitHub Actions artifact upload. Device QA, catalogue coverage research, signing configuration and release APK remain release-readiness tasks.
 
-## Latest hardening
+## Catalogue coverage constraints
 
-- Added a centralized conservative licence policy and tests.
-- Downloads are permitted only for explicit CC0, CC BY or CC BY-SA declarations; NonCommercial, NoDerivatives, Public Domain Mark-only and unknown rights metadata are rejected.
-- Licence metadata is retained in each live search result and displayed to the user for attribution/verification.
-- Download eligibility still requires a verified HTTPS audio response. A licence declaration alone never enables the download button.
+- Internet Archive and Wikimedia Commons are public archives, not complete commercial music catalogues.
+- Current commercial Amapiano, Maskandi, Gqom, House and international releases may not be indexed.
+- Search must preserve equal South African/international opportunity and show source provenance.
+- Download eligibility is based on a direct public HTTPS MP3 file identified as MPEG audio; licence/rights metadata is displayed when supplied but is not an in-app gate.
+- Never bypass DRM, authentication, paywalls, CAPTCHAs or other access controls. Public accessibility does not itself grant copyright permission.
 
-## Remaining release-readiness work
+## Remaining work
 
-- Add additional authorised catalogues with meaningful South African coverage; do not imply Internet Archive is comprehensive.
-- Add rate limiting, result pagination and caching.
-- Add network/error handling tests and run physical-device QA.
-- Add app icon, secure signing configuration and a signed release workflow.
-- Verify attribution obligations for each provider and display required creator/source credits where supplied.
+- Run CI on the expanded provider implementation and fix any build/test failures.
+- Add result pagination, caching, request throttling and more robust cancellation/error handling.
+- Research additional catalogue providers with meaningful South African coverage and no paid API dependency.
+- Add provider attribution/rights presentation where source metadata is supplied.
+- Run physical-device QA, add app icon, secure signing configuration and a signed release workflow.
