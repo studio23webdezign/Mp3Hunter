@@ -144,6 +144,8 @@ private fun Mp3HunterApp(context: Context) {
                                     message = "Enter an artist, track or album to search."
                                 } else {
                                     loading = true
+                                    page = 1
+                                    canLoadMore = false
                                     message = null
                                     results = emptyList()
                                     val match = matcher.match(query)
@@ -153,6 +155,7 @@ private fun Mp3HunterApp(context: Context) {
                                         try {
                                             val found = provider.search(plan)
                                             results = found
+                                            canLoadMore = found.isNotEmpty()
                                             if (found.isEmpty()) message = "No matching audio records were found in the connected public catalogue. Try a track title or a broader search."
                                             found.forEach { track ->
                                                 withContext(Dispatchers.IO) {
@@ -187,7 +190,7 @@ private fun Mp3HunterApp(context: Context) {
                         message?.let { Text(it, color = Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 10.dp)) }
                         if (results.isNotEmpty()) {
                             Text("${results.size} RESULTS • SOUTH AFRICAN + INTERNATIONAL", color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 14.dp, bottom = 8.dp))
-                            LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(bottom = 28.dp)) {
+                            LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(bottom = 28.dp)) {
                                 items(results, key = { it.pageUrl }) { result ->
                                     val isFavorite = favorites.any { it.pageUrl == result.pageUrl }
                                     TrackCard(
