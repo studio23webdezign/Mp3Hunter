@@ -176,8 +176,14 @@ class WebDiscoveryProvider(
 
     private fun normalizeHttpUrl(value: String): String? = try {
         val parsed = value.toHttpUrl()
-        parsed.newBuilder().fragment(null).build().toString()
+        val host = parsed.host.lowercase()
+        if (isExcludedHost(host)) null
+        else parsed.newBuilder().fragment(null).build().toString()
     } catch (_: Exception) {
         null
     }
+
+    private fun isExcludedHost(host: String): Boolean =
+        host == "archive.org" || host.endsWith(".archive.org") ||
+            host == "commons.wikimedia.org" || host.endsWith(".commons.wikimedia.org")
 }
