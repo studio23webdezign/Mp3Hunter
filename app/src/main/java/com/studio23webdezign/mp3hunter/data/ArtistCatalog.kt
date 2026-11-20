@@ -108,7 +108,7 @@ object ArtistCatalog {
         Artist("Stogie T"),
         Artist("Scoop Lezinto"),
         Artist("Kwiish SA"),
-        Artist("Dlala Thukzin"),
+        Artist("Dlala Thukzin", listOf("Thukzin")),
         Artist("Zee Nxumalo"),
         Artist("Pcee"),
         Artist("Toss"),
