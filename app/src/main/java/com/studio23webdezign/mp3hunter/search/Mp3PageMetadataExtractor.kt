@@ -53,7 +53,7 @@ internal object Mp3PageMetadataExtractor {
 
         page.getElementsByTag("script").filter { it.attr("type").equals("application/ld+json", true) }.forEach { script ->
             runCatching {
-                val raw = script.data().ifBlank { script.html() }.trim().removePrefix("\uFEFF")
+                val raw = script.data().ifBlank { script.wholeText() }.trim().removePrefix("\uFEFF")
                 fun inspect(value: Any?) {
                     when (value) {
                         is JSONObject -> {
@@ -76,6 +76,14 @@ internal object Mp3PageMetadataExtractor {
                     }
                 }
                 inspect(org.json.JSONTokener(raw).nextValue())
+                if (jsonArtist == null) {
+                    jsonArtist = Regex("""(?is)"byArtist"\s*:\s*\{[^}]*?"name"\s*:\s*"([^"]+)""")
+                        .find(raw)?.groupValues?.getOrNull(1)
+                }
+                if (jsonTitle == null && raw.contains("MusicRecording", true)) {
+                    jsonTitle = Regex("""(?is)"name"\s*:\s*"([^"]+)""")
+                        .find(raw)?.groupValues?.getOrNull(1)
+                }
             }
         }
         return (jsonTitle ?: metaTitle) to (jsonArtist ?: metaArtist)
