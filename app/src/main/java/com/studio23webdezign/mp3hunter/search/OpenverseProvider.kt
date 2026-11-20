@@ -50,7 +50,6 @@ class OpenverseProvider(
                     if (checked >= 10) break
                     val item = results.optJSONObject(index) ?: continue
                     val direct = item.optString("url").takeIf { it.startsWith("https://") } ?: continue
-                    if (!direct.substringBefore('?').endsWith(".mp3", true)) continue
                     checked++
 
                     val verified = verifyMp3(direct) ?: continue
