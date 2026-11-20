@@ -146,7 +146,7 @@ private fun Mp3HunterApp(context: Context) {
                                     results = emptyList()
                                     val match = matcher.match(query)
                                     recognized = match?.artist?.canonicalName
-                                    val plan = SearchPlanner.create(query, recognized)
+                                    val plan = SearchPlanner.create(query, recognized, match?.artist?.aliases.orEmpty())
                                     scope.launch {
                                         try {
                                             val found = provider.search(plan)
