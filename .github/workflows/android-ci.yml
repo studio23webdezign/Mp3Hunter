@@ -26,3 +26,10 @@ jobs:
           gradle-version: "8.11.1"
       - name: Build and run unit tests
         run: gradle :app:testDebugUnitTest :app:assembleDebug
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: mp3-hunter-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
