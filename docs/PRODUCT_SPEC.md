@@ -15,9 +15,10 @@ A mobile-first music discovery tool with equal priority for South African and in
 ## Current catalogue sources
 - **Internet Archive:** advanced metadata search plus item metadata resolution and public MP3 URL verification. The South African search lane also checks country/genre subject metadata without requiring those tags on the artist/title match.
 - **Wikimedia Commons:** MediaWiki search API for audio files; only direct HTTPS MP3 files with an MPEG audio MIME type are returned as downloadable results. File-page metadata is retained for source and rights display.
-- Both sources are queried concurrently. A source failure does not discard results returned by the other source.
+- **Openverse:** anonymous public audio-search API, filtered to music and MP3 results. The direct media URL is checked for an MPEG audio response before it is exposed. Openverse aggregates records from multiple public providers; its rights metadata is retained for display and does not gate the app action.
+- All three sources are queried concurrently. A source failure does not discard results returned by the other sources.
 
-These are public archives, not comprehensive commercial music services. Current commercial South African releases may not be indexed or available. Coverage must not be described as complete.
+These are public archives and aggregators, not comprehensive commercial music services. Current commercial South African releases may not be indexed or available. Coverage must not be described as complete.
 
 ## Architecture
 Kotlin + Jetpack Compose, Room/SQLite, OkHttp, WorkManager, AndroidX Media3 and Android DownloadManager. Search providers are independent and can be added without introducing an app-owned backend or paid API dependency.
