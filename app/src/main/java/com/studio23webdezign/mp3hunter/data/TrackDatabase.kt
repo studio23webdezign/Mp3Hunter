@@ -8,6 +8,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.RoomDatabase
+import androidx.room.Transaction
 
 @Entity(tableName = "tracks")
 data class SavedTrack(
@@ -23,10 +24,29 @@ data class SavedTrack(
 
 @Dao
 interface TrackDao {
-    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun upsert(track: SavedTrack)
-    @Query("SELECT * FROM tracks WHERE isFavorite = 1 ORDER BY title COLLATE NOCASE") suspend fun favorites(): List<SavedTrack>
-    @Query("SELECT * FROM tracks ORDER BY lastSeenAt DESC LIMIT 50") suspend fun history(): List<SavedTrack>
-    @Query("UPDATE tracks SET isFavorite = :favorite WHERE pageUrl = :url") suspend fun setFavorite(url: String, favorite: Boolean)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(track: SavedTrack)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertIfMissing(track: SavedTrack)
+
+    @Query("UPDATE tracks SET title = :title, artist = :artist, sourceName = :sourceName, directAudioUrl = :audioUrl, isPermittedDownload = :permitted, lastSeenAt = :seenAt WHERE pageUrl = :url")
+    suspend fun updateSearchMetadata(url: String, title: String, artist: String?, sourceName: String, audioUrl: String?, permitted: Boolean, seenAt: Long)
+
+    @Transaction
+    suspend fun recordSearch(track: SavedTrack) {
+        insertIfMissing(track)
+        updateSearchMetadata(track.pageUrl, track.title, track.artist, track.sourceName, track.directAudioUrl, track.isPermittedDownload, track.lastSeenAt)
+    }
+
+    @Query("SELECT * FROM tracks WHERE isFavorite = 1 ORDER BY title COLLATE NOCASE")
+    suspend fun favorites(): List<SavedTrack>
+
+    @Query("SELECT * FROM tracks ORDER BY lastSeenAt DESC LIMIT 50")
+    suspend fun history(): List<SavedTrack>
+
+    @Query("UPDATE tracks SET isFavorite = :favorite WHERE pageUrl = :url")
+    suspend fun setFavorite(url: String, favorite: Boolean)
 }
 
 @Database(entities = [SavedTrack::class], version = 1, exportSchema = false)
