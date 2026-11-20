@@ -27,10 +27,9 @@ import com.studio23webdezign.mp3hunter.data.SavedTrack
 import com.studio23webdezign.mp3hunter.data.TrackDatabase
 import com.studio23webdezign.mp3hunter.recognition.ArtistMatcher
 import com.studio23webdezign.mp3hunter.search.AudioDownloadManager
-import com.studio23webdezign.mp3hunter.search.InternetArchiveProvider
-import com.studio23webdezign.mp3hunter.search.WikimediaCommonsProvider
 import com.studio23webdezign.mp3hunter.search.MultiSourceMusicSearchProvider
 import com.studio23webdezign.mp3hunter.search.OpenverseProvider
+import com.studio23webdezign.mp3hunter.search.WebDiscoveryProvider
 import com.studio23webdezign.mp3hunter.search.MusicResult
 import com.studio23webdezign.mp3hunter.search.SearchPlanner
 import com.studio23webdezign.mp3hunter.search.TrackPlayback
@@ -65,7 +64,7 @@ private fun Mp3HunterApp(context: Context) {
     var selectedTab by remember { mutableStateOf("SEARCH") }
     val scope = rememberCoroutineScope()
     val matcher = remember { ArtistMatcher(ArtistCatalog.artists) }
-    val provider = remember { MultiSourceMusicSearchProvider(listOf(InternetArchiveProvider(), WikimediaCommonsProvider(), OpenverseProvider())) }
+    val provider = remember { MultiSourceMusicSearchProvider(listOf(WebDiscoveryProvider(), OpenverseProvider())) }
     val database = remember { Room.databaseBuilder(context, TrackDatabase::class.java, "mp3-hunter.db").build() }
     val dao = remember { database.trackDao() }
     val playback = remember { TrackPlayback(context) }
@@ -156,7 +155,7 @@ private fun Mp3HunterApp(context: Context) {
                                             val found = provider.search(plan)
                                             results = found
                                             canLoadMore = found.isNotEmpty()
-                                            if (found.isEmpty()) message = "No matching audio records were found in the connected public catalogue. Try a track title or a broader search."
+                                            if (found.isEmpty()) message = "No matching audio records were found in the public web search and audio sources. Try a track title or a broader search."
                                             found.forEach { track ->
                                                 withContext(Dispatchers.IO) {
                                                     dao.recordSearch(SavedTrack(
@@ -181,7 +180,7 @@ private fun Mp3HunterApp(context: Context) {
                             },
                             modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Ink)
-                        ) { Text(if (loading) "SEARCHING…" else "SEARCH 3 MUSIC SOURCES", fontWeight = FontWeight.Black) }
+                        ) { Text(if (loading) "SEARCHING…" else "SEARCH THE WEB FOR MP3s", fontWeight = FontWeight.Black) }
 
                         recognized?.let {
                             Text("Artist recognised: $it", color = Accent, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
@@ -233,7 +232,7 @@ private fun Mp3HunterApp(context: Context) {
                                                 results = merged
                                                 page += 1
                                                 canLoadMore = next.isNotEmpty() && addedNewResults
-                                                if (next.isEmpty()) message = "No more results in the connected public catalogues."
+                                                if (next.isEmpty()) message = "No more results in the public web search and audio sources."
                                                 next.forEach { track ->
                                                     withContext(Dispatchers.IO) {
                                                         dao.recordSearch(SavedTrack(
