@@ -91,7 +91,7 @@ internal object Mp3PageMetadataExtractor {
     }
 
     private fun splitArtistAndTitle(value: String, fallbackArtist: String?): Pair<String, String>? {
-        val parts = value.substringBeforeLast('.', value).split(Regex("\\s+[-–—|]\\s+"), limit = 2)
+        val parts = value.substringBeforeLast('.', value).split(Regex("\s+[-–—|]\s+"), limit = 2)
         if (parts.size != 2) return null
         val left = cleanTitle(parts[0])
         val right = cleanTitle(parts[1])
@@ -106,10 +106,10 @@ internal object Mp3PageMetadataExtractor {
     private fun cleanTitle(value: String): String =
         value.replace(Regex("(?i)\\.mp3$"), "")
             .replace(
-                Regex("""\\s*[-|_]\\s*(official audio|official video|free download|download mp3).*""", RegexOption.IGNORE_CASE),
+                Regex("""\s*[-|_]\s*(official audio|official video|free download|download mp3).*""", RegexOption.IGNORE_CASE),
                 ""
             )
-            .replace(Regex("""\\s+"""), " ")
+            .replace(Regex("""\s+"""), " ")
             .trim(' ', '-', '_', '|')
 
     private fun pageMentions(page: Document, artist: String): Boolean =
