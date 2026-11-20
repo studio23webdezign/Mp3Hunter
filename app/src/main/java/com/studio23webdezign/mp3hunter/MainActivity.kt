@@ -89,7 +89,7 @@ private fun Mp3HunterApp(context: Context) {
                 ) {
                     Column(Modifier.weight(1f)) {
                         Text("MP3 HUNTER", color = Accent, fontSize = 25.sp, fontWeight = FontWeight.Black)
-                        Text("Discover music. Save what you're allowed to.", color = Muted, fontSize = 12.sp)
+                        Text("Discover music. Find direct MP3 downloads.", color = Muted, fontSize = 12.sp)
                     }
                     Surface(color = Panel, shape = RoundedCornerShape(12.dp)) {
                         Text("BETA", color = Accent, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp), fontWeight = FontWeight.Bold)
@@ -157,7 +157,7 @@ private fun Mp3HunterApp(context: Context) {
                                                         artist = track.artist,
                                                         sourceName = track.sourceName,
                                                         directAudioUrl = track.directAudioUrl,
-                                                        isPermittedDownload = track.isPermittedDownload,
+                                                        isDownloadAvailable = track.isDownloadAvailable,
                                                         lastSeenAt = System.currentTimeMillis()
                                                     ))
                                                 }
@@ -191,7 +191,7 @@ private fun Mp3HunterApp(context: Context) {
                                         onFavorite = {
                                             scope.launch {
                                                 withContext(Dispatchers.IO) {
-                                                    dao.upsert(SavedTrack(result.pageUrl, result.title, result.artist, result.sourceName, result.directAudioUrl, result.isPermittedDownload, !isFavorite))
+                                                    dao.upsert(SavedTrack(result.pageUrl, result.title, result.artist, result.sourceName, result.directAudioUrl, result.isDownloadAvailable, !isFavorite))
                                                 }
                                                 loadLibrary()
                                             }
@@ -199,7 +199,7 @@ private fun Mp3HunterApp(context: Context) {
                                         onPlay = { playback.play(result) },
                                         onDownload = {
                                             val id = downloader.enqueue(result)
-                                            message = if (id != null) "Download queued. Android will notify you when it finishes." else "This recording is not marked as downloadable."
+                                            message = if (id != null) "Download queued. Android will notify you when it finishes." else "A direct public MP3 download is not available for this result."
                                         }
                                     )
                                 }
@@ -254,7 +254,7 @@ private fun TrackCard(
             }
             Text(result.sourceName, color = Muted, fontSize = 10.sp)
             result.license?.takeIf { it.isNotBlank() }?.let { license ->
-                Text("LICENCE / RIGHTS: $license", color = Muted, fontSize = 9.sp)
+                Text("SOURCE RIGHTS: $license", color = Muted, fontSize = 9.sp)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (result.directAudioUrl != null) {
@@ -282,7 +282,7 @@ private fun SavedTrackCard(track: SavedTrack, onRemove: (() -> Unit)?) {
                 Text(track.title, color = Color.White, fontWeight = FontWeight.Bold)
                 Text(track.artist ?: track.sourceName, color = Muted, fontSize = 12.sp)
             }
-            if (track.isPermittedDownload) Text("MP3", color = Accent, fontSize = 10.sp)
+            if (track.isDownloadAvailable) Text("MP3", color = Accent, fontSize = 10.sp)
             onRemove?.let { TextButton(onClick = it) { Text("REMOVE") } }
         }
     }
@@ -302,7 +302,7 @@ private fun DiscoveryIntro() {
                 Text("Try “kabza de smal”. MP3 HUNTER suggests verified artist spellings before searching.", color = Color.White, fontSize = 12.sp)
             }
         }
-        Text("Downloads appear only for verified MP3 files with an explicit supported licence. Other catalogue results remain discoverable but cannot be downloaded in-app.", color = Muted, fontSize = 11.sp)
+        Text("Download buttons appear when the source exposes a direct public MP3 URL and the server confirms it is audio. Check the source's terms and rights before saving or sharing a track.", color = Muted, fontSize = 11.sp)
     }
 }
 
