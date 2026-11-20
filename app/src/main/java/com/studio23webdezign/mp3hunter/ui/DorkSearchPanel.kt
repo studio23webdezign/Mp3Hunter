@@ -5,10 +5,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
@@ -19,6 +19,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -65,7 +66,7 @@ fun DorkSearchPanel(modifier: Modifier = Modifier) {
         )
 
         Text("SEARCH TYPE", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-        Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+        Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
             listOf(
                 DorkIntent.GENERAL to "All",
                 DorkIntent.ARTIST to "Artist",
@@ -82,7 +83,7 @@ fun DorkSearchPanel(modifier: Modifier = Modifier) {
         }
 
         Text("MARKET", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             listOf(
                 DorkMarket.BOTH to "Both markets",
                 DorkMarket.SOUTH_AFRICAN to "South Africa",
@@ -124,7 +125,7 @@ private fun DorkQueryCard(dork: DorkQuery, onOpen: () -> Unit) {
     ) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                AssistChip(onClick = {}, label = { Text(dork.family.replace('-', ' ')) })
+                Text(dork.family.replace('-', ' '), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                 Text("Priority ${dork.priority}", style = MaterialTheme.typography.labelSmall)
             }
             Text(dork.value, style = MaterialTheme.typography.bodyMedium)
