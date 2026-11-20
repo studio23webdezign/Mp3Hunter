@@ -4,7 +4,7 @@
 A mobile-first music discovery tool with equal priority for South African and international music. Users search artists, tracks and albums, identify likely spelling corrections, discover public catalogue records and manage direct MP3 downloads.
 
 ## Core requirements
-- South African and international discovery receive equal ranking opportunity (50/50).
+- South African and international discovery receive equal priority (50/50). The curated spelling catalogue currently contains 205 South African and 206 international artist entries, and the provider result batches are interleaved across both discovery lanes.
 - South African genres include Amapiano, Maskandi, Gqom, House, Afro House, Deep House, 3-step, Kwaito, Gospel, Xitsonga/Shangaan disco, Mbaqanga, Isicathamiya, Afro-pop, Afrikaans music, traditional music, SA Hip-Hop and SA R&B. The artist catalogue includes regional Xitsonga, Tshivenda and Sepedi names, plus gospel and Afrikaans performers.
 - Artist aliases and typo-tolerant recognition; high-confidence corrections only. Ambiguous matches are suggestions, not silent substitutions.
 - Known artist aliases are passed into every provider so the canonical name and up to three curated alternative spellings are queried separately.
