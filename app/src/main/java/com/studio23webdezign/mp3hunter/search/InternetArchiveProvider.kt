@@ -42,7 +42,7 @@ class InternetArchiveProvider(
             for (i in 0 until docs.length()) {
                 val doc = docs.optJSONObject(i) ?: continue
                 val id = doc.optString("identifier").takeIf(String::isNotBlank) ?: continue
-                resolveItem(id, doc.optString("title").ifBlank { id }, doc.optString("creator").ifBlank { null })?.let(::add)
+                resolveItem(id, doc.optString("title").ifBlank { id }, doc.optString("creator").takeIf { it.isNotBlank() })?.let(::add)
             }
         }
     }
