@@ -104,7 +104,7 @@ private fun Mp3HunterApp(context: Context) {
                     listOf("SEARCH", "DORKS", "FAVORITES", "HISTORY").forEach { tab ->
                         FilterChip(
                             selected = selectedTab == tab,
-                            onClick = { selectedTab = tab; if (tab != "SEARCH") loadLibrary() },
+                            onClick = { selectedTab = tab; if (tab == "FAVORITES" || tab == "HISTORY") loadLibrary() },
                             label = { Text(tab, fontSize = 11.sp) },
                             modifier = Modifier.weight(1f)
                         )
