@@ -59,7 +59,9 @@ private fun Mp3HunterApp(context: Context) {
     var suggestions by remember { mutableStateOf<List<String>>(emptyList()) }
     var recognized by remember { mutableStateOf<String?>(null) }
     var message by remember { mutableStateOf<String?>(null) }
-    var loading by remember { mutableStateOf(false) }\n    var page by remember { mutableIntStateOf(1) }\n    var canLoadMore by remember { mutableStateOf(false) }
+    var loading by remember { mutableStateOf(false) }
+    var page by remember { mutableIntStateOf(1) }
+    var canLoadMore by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableStateOf("SEARCH") }
     val scope = rememberCoroutineScope()
     val matcher = remember { ArtistMatcher(ArtistCatalog.artists) }
