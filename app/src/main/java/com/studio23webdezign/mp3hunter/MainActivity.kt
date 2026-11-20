@@ -59,7 +59,7 @@ private fun Mp3HunterApp(context: Context) {
     var suggestions by remember { mutableStateOf<List<String>>(emptyList()) }
     var recognized by remember { mutableStateOf<String?>(null) }
     var message by remember { mutableStateOf<String?>(null) }
-    var loading by remember { mutableStateOf(false) }
+    var loading by remember { mutableStateOf(false) }\n    var page by remember { mutableIntStateOf(1) }\n    var canLoadMore by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableStateOf("SEARCH") }
     val scope = rememberCoroutineScope()
     val matcher = remember { ArtistMatcher(ArtistCatalog.artists) }
@@ -146,7 +146,7 @@ private fun Mp3HunterApp(context: Context) {
                                     results = emptyList()
                                     val match = matcher.match(query)
                                     recognized = match?.artist?.canonicalName
-                                    val plan = SearchPlanner.create(query, recognized, match?.artist?.aliases.orEmpty())
+                                    val plan = SearchPlanner.create(query, recognized, match?.artist?.aliases.orEmpty(), page = 1)
                                     scope.launch {
                                         try {
                                             val found = provider.search(plan)
@@ -206,6 +206,50 @@ private fun Mp3HunterApp(context: Context) {
                                         }
                                     )
                                 }
+                            }
+                            if (canLoadMore && !loading) {
+                                OutlinedButton(
+                                    onClick = {
+                                        loading = true
+                                        message = null
+                                        val match = matcher.match(query)
+                                        scope.launch {
+                                            try {
+                                                val next = provider.search(
+                                                    SearchPlanner.create(
+                                                        query,
+                                                        recognized ?: match?.artist?.canonicalName,
+                                                        match?.artist?.aliases.orEmpty(),
+                                                        page = page + 1
+                                                    )
+                                                )
+                                                results = (results + next).distinctBy { it.directAudioUrl ?: it.pageUrl }
+                                                page += 1
+                                                canLoadMore = next.isNotEmpty()
+                                                if (next.isEmpty()) message = "No more results in the connected public catalogues."
+                                                next.forEach { track ->
+                                                    withContext(Dispatchers.IO) {
+                                                        dao.recordSearch(SavedTrack(
+                                                            pageUrl = track.pageUrl,
+                                                            title = track.title,
+                                                            artist = track.artist,
+                                                            sourceName = track.sourceName,
+                                                            directAudioUrl = track.directAudioUrl,
+                                                            isDownloadAvailable = track.isDownloadAvailable,
+                                                            lastSeenAt = System.currentTimeMillis()
+                                                        ))
+                                                    }
+                                                }
+                                                loadLibrary()
+                                            } catch (e: Exception) {
+                                                message = "Could not load more results: ${e.localizedMessage ?: "check your connection"}"
+                                            } finally {
+                                                loading = false
+                                            }
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                                ) { Text("LOAD MORE RESULTS") }
                             }
                         } else if (!loading && message == null) {
                             DiscoveryIntro()
