@@ -7,8 +7,8 @@ import org.jsoup.nodes.Document
 import java.net.URLDecoder
 
 /**
- * Extracts readable artist and track metadata from the indexed HTML page,
- * using structured metadata first and MP3 filename/link text as fallbacks.
+ * Extracts readable artist and track metadata from an indexed HTML page,
+ * preferring structured music metadata and falling back to filename/link text.
  */
 internal object Mp3PageMetadataExtractor {
     data class TrackMetadata(val title: String, val artist: String?)
@@ -34,11 +34,8 @@ internal object Mp3PageMetadataExtractor {
         val parsed = listOfNotNull(fileName, linkCandidate, titleCandidate)
             .firstNotNullOfOrNull { splitArtistAndTitle(it, fallbackArtist) }
 
-        val title = structured.first
-            ?: parsed?.second
-            ?: cleanTitle(titleCandidate.ifBlank { "Unknown track" })
-        val artist = structured.second
-            ?: parsed?.first
+        val title = structured.first ?: parsed?.second ?: cleanTitle(titleCandidate.ifBlank { "Unknown track" })
+        val artist = structured.second ?: parsed?.first
             ?: fallbackArtist?.takeIf { it.isNotBlank() && pageMentions(page, it) }
 
         return TrackMetadata(title = title.ifBlank { "Unknown track" }, artist = artist)
@@ -51,39 +48,50 @@ internal object Mp3PageMetadataExtractor {
         var jsonTitle: String? = null
         var jsonArtist: String? = null
 
-        page.getElementsByTag("script").filter { it.attr("type").equals("application/ld+json", true) }.forEach { script ->
-            runCatching {
-                val raw = script.html().trim().removePrefix("\uFEFF")
-                fun inspect(value: Any?) {
-                    when (value) {
-                        is JSONObject -> {
-                            val type = value.opt("@type")?.toString().orEmpty()
-                            if (type.contains("MusicRecording", true) || type.contains("MusicAlbum", true)) {
-                                jsonTitle = jsonTitle ?: value.optString("name").takeIf { it.isNotBlank() }
-                            }
-                            val byArtist = value.opt("byArtist")
-                            jsonArtist = jsonArtist ?: when (byArtist) {
-                                is JSONObject -> byArtist.optString("name").takeIf { it.isNotBlank() }
-                                is JSONArray -> (0 until byArtist.length()).firstNotNullOfOrNull { index ->
-                                    byArtist.optJSONObject(index)?.optString("name")?.takeIf { it.isNotBlank() }
+        page.getElementsByTag("script")
+            .filter { it.attr("type").equals("application/ld+json", true) }
+            .forEach { script ->
+                val raw = script.data().ifBlank { script.html() }.trim().removePrefix("\uFEFF")
+
+                // Keep malformed publisher JSON-LD from suppressing regex fallback extraction.
+                runCatching {
+                    fun inspect(value: Any?) {
+                        when (value) {
+                            is JSONObject -> {
+                                val type = value.opt("@type")?.toString().orEmpty()
+                                if (type.contains("MusicRecording", true) || type.contains("MusicAlbum", true)) {
+                                    jsonTitle = jsonTitle ?: value.optString("name").takeIf { it.isNotBlank() && it != "null" }
                                 }
-                                is String -> byArtist.takeIf { it.isNotBlank() }
-                                else -> null
+                                val byArtist = value.opt("byArtist")
+                                jsonArtist = jsonArtist ?: when (byArtist) {
+                                    is JSONObject -> byArtist.optString("name").takeIf { it.isNotBlank() && it != "null" }
+                                    is JSONArray -> (0 until byArtist.length()).firstNotNullOfOrNull { index ->
+                                        byArtist.optJSONObject(index)?.optString("name")
+                                            ?.takeIf { it.isNotBlank() && it != "null" }
+                                    }
+                                    is String -> byArtist.takeIf { it.isNotBlank() }
+                                    else -> null
+                                }
+                                value.keys().forEach { key -> inspect(value.opt(key)) }
                             }
-                            value.keys().forEach { key -> inspect(value.opt(key)) }
+                            is JSONArray -> for (index in 0 until value.length()) inspect(value.opt(index))
                         }
-                        is JSONArray -> for (index in 0 until value.length()) inspect(value.opt(index))
                     }
+                    inspect(org.json.JSONTokener(raw).nextValue())
                 }
-                inspect(org.json.JSONTokener(raw).nextValue())
-                val artistMatch = Regex("(?is)\"byArtist\"\\s*:\\s*\\{.*?\"name\"\\s*:\\s*\"([^\"]+)\"")
-                    .find(raw)?.groupValues?.getOrNull(1)
-                val titleMatch = Regex("(?is)\"@type\"\\s*:\\s*\"MusicRecording\".*?\"name\"\\s*:\\s*\"([^\"]+)\"")
-                    .find(raw)?.groupValues?.getOrNull(1)
+
+                val artistMatch = Regex(
+                    """(?is)"byArtist"\s*:\s*(?:\{[^{}]*"name"\s*:\s*"([^"]+)"|"(.*?)")"""
+                ).find(raw)?.let { match ->
+                    match.groupValues[1].ifBlank { match.groupValues[2] }
+                }
+                val recordingMatch = Regex(
+                    """(?is)"@type"\s*:\s*"MusicRecording"[^}]*"name"\s*:\s*"([^"]+)""""
+                ).find(raw)?.groupValues?.getOrNull(1)
                 jsonArtist = jsonArtist ?: artistMatch
-                jsonTitle = jsonTitle ?: titleMatch
+                jsonTitle = jsonTitle ?: recordingMatch
             }
-        }
+
         return (jsonTitle ?: metaTitle) to (jsonArtist ?: metaArtist)
     }
 
