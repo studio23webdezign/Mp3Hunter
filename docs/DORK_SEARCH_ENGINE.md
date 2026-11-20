@@ -33,7 +33,7 @@ val googleLinks = GoogleDorkUrlBuilder.buildAll(queries)
 
 ## Execution strategy
 
-The web-discovery provider selects a diversified subset of generated query families rather than submitting every possible combination. This balances search coverage against provider quotas, request pacing, battery use, and mobile data. Mwmbl's anonymous API tier is documented as 1,000 requests/month at 1 request/second; quotas are shared by IP. A single MP3 HUNTER search therefore uses a bounded request budget and gracefully returns partial results when the provider limits requests.
+The dork engine generates Google-specific operators for the dedicated DORKS screen. Google links are opened by the user in the browser; the app does not scrape Google result pages. Mwmbl is a separate conventional full-text index and does not interpret Google operators, so the web-discovery provider sends it natural-language music queries instead. Its anonymous API tier is documented as 1,000 requests/month at 1 request/second; quotas are shared by IP. A single MP3 HUNTER search therefore uses a bounded request budget and gracefully returns partial results when the provider limits requests.
 
 Google links are generated for user-initiated browser searches. MP3 HUNTER does not automate Google SERP scraping or solve challenges.
 
