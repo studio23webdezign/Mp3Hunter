@@ -8,16 +8,14 @@ import okhttp3.Request
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.json.JSONObject
 import org.jsoup.Jsoup
+import org.jsoup.nodes.Document
 import java.io.IOException
-import java.net.URLDecoder
 import java.util.concurrent.TimeUnit
 
 /**
- * Discovers publicly indexed pages with Mwmbl, then inspects reachable HTML pages for
- * direct MP3 links and ordinary directory listings. It never attempts challenge solving,
- * login, paywall, CAPTCHA, or anti-bot bypasses.
- *
- * Crawl limits are deliberately conservative for mobile data and remote-site stability.
+ * Searches a public web index, opens results in relevance order, and extracts track metadata
+ * from the first relevant indexed page that actually exposes verified MP3 files.
+ * It never attempts challenge solving, login, paywall, CAPTCHA, or anti-bot bypasses.
  */
 class WebDiscoveryProvider(
     private val client: OkHttpClient = OkHttpClient.Builder()
@@ -31,6 +29,8 @@ class WebDiscoveryProvider(
 ) : MusicSearchProvider {
     override val providerName = "Web + public MP3 directories"
 
+    private data class IndexedPage(val url: String, val title: String, val snippet: String)
+
     override suspend fun search(plan: SearchPlan): List<MusicResult> = withContext(Dispatchers.IO) {
         val terms = (listOf(plan.normalizedQuery) + plan.alternateQueries)
             .map { it.trim().take(120) }
@@ -39,10 +39,8 @@ class WebDiscoveryProvider(
             .take(4)
         if (terms.isEmpty()) return@withContext emptyList()
 
-        val discoveredPages = linkedSetOf<String>()
         // Mwmbl is a conventional full-text index, not a Google-operator interpreter.
-        // Keep its queries natural-language; Google-specific dorks are exposed separately
-        // through the DORKS screen and opened as user-initiated Google searches.
+        // Search naturally, retaining the index's original relevance order.
         val searchQueries = buildList {
             terms.take(3).forEach { term ->
                 add("\"$term\" mp3")
@@ -50,61 +48,84 @@ class WebDiscoveryProvider(
             }
         }.distinct().take(6)
 
-        // Mwmbl anonymous API: one request per second, with a 1,000 request/month quota.
-        searchQueries.forEachIndexed { index, q ->
+        val indexedPages = linkedMapOf<String, IndexedPage>()
+        searchQueries.forEachIndexed { index, query ->
             if (index > 0) delay(1_050)
-            discoveredPages.addAll(searchIndex(q))
-        }
-
-        val visited = linkedSetOf<String>()
-        val queue = ArrayDeque<Pair<String, Int>>()
-        discoveredPages.take(maxPagesPerSearch).forEach { queue.add(it to 0) }
-        val found = linkedMapOf<String, MusicResult>()
-
-        while (queue.isNotEmpty() && visited.size < maxPagesPerSearch) {
-            val (pageUrl, depth) = queue.removeFirst()
-            val normalized = normalizeHttpUrl(pageUrl) ?: continue
-            if (!visited.add(normalized)) continue
-            val page = fetchHtml(normalized) ?: continue
-            val pageTitle = page.title().ifBlank { normalized.substringAfterLast('/') }
-            val host = normalized.toHttpUrl().host
-
-            for (element in page.select("a[href]")) {
-                val href = element.attr("abs:href").trim()
-                if (href.isBlank()) continue
-                val target = normalizeHttpUrl(href) ?: continue
-                val path = target.toHttpUrl().encodedPath.lowercase()
-                val label = element.text().ifBlank { target.substringAfterLast('/') }
-
-                if (path.endsWith(".mp3") || path.contains(".mp3/")) {
-                    val audioUrl = verifyMp3(target) ?: continue
-                    val filename = target.toHttpUrl().pathSegments.lastOrNull()
-                        ?.let { runCatching { URLDecoder.decode(it, "UTF-8") }.getOrNull() }
-                        ?.removeSuffix("/")
-                        ?: label
-                    found.putIfAbsent(audioUrl, MusicResult(
-                        title = filename.removeSuffix(".mp3").replace('_', ' ').ifBlank { pageTitle },
-                        artist = null,
-                        sourceName = "$providerName • $host",
-                        pageUrl = normalized,
-                        directAudioUrl = audioUrl,
-                        isDownloadAvailable = true,
-                        license = null
-                    ))
-                } else if (
-                    depth < maxDepth &&
-                    target.toHttpUrl().host == host &&
-                    isLikelyDirectoryOrListing(target, label) &&
-                    !visited.contains(target)
-                ) {
-                    queue.add(target to depth + 1)
-                }
+            searchIndex(query).forEach { page ->
+                val normalized = normalizeHttpUrl(page.url) ?: return@forEach
+                indexedPages.putIfAbsent(normalized, page.copy(url = normalized))
             }
         }
-        found.values.take(60)
+
+        val orderedPages = indexedPages.values
+            .sortedByDescending { indexedPageScore(it, plan.normalizedQuery) }
+            .take(maxPagesPerSearch)
+
+        for (indexed in orderedPages) {
+            val page = fetchHtml(indexed.url) ?: continue
+            val pageTitle = page.title().ifBlank { indexed.title.ifBlank { indexed.url.substringAfterLast('/') } }
+            val host = indexed.url.toHttpUrl().host
+            val queue = ArrayDeque<Pair<String, Int>>()
+            queue.add(indexed.url to 0)
+            val visited = linkedSetOf<String>()
+            val pageResults = linkedMapOf<String, MusicResult>()
+
+            while (queue.isNotEmpty() && visited.size < maxPagesPerSearch) {
+                val (currentUrl, depth) = queue.removeFirst()
+                val normalized = normalizeHttpUrl(currentUrl) ?: continue
+                if (!visited.add(normalized)) continue
+                val currentPage = if (normalized == indexed.url) page else fetchHtml(normalized) ?: continue
+
+                for (element in currentPage.select("a[href], audio[src], source[src]")) {
+                    val href = when (element.tagName().lowercase()) {
+                        "audio", "source" -> element.attr("abs:src")
+                        else -> element.attr("abs:href")
+                    }.trim()
+                    if (href.isBlank()) continue
+                    val target = normalizeHttpUrl(href) ?: continue
+                    val path = target.toHttpUrl().encodedPath.lowercase()
+                    val label = element.text().ifBlank {
+                        element.attr("title").ifBlank { target.substringAfterLast('/') }
+                    }
+
+                    if (path.endsWith(".mp3") || path.contains(".mp3/")) {
+                        val audioUrl = verifyMp3(target) ?: continue
+                        val metadata = Mp3PageMetadataExtractor.extract(
+                            page = currentPage,
+                            audioUrl = audioUrl,
+                            linkText = label,
+                            fallbackArtist = plan.normalizedQuery
+                        )
+                        val relevanceText = "$pageTitle $label ${target.substringAfterLast('/')}"
+                        if (relevanceScore(relevanceText, plan.normalizedQuery) == 0) continue
+
+                        pageResults.putIfAbsent(audioUrl, MusicResult(
+                            title = metadata.title,
+                            artist = metadata.artist,
+                            sourceName = "$providerName • $host",
+                            pageUrl = normalized,
+                            directAudioUrl = audioUrl,
+                            isDownloadAvailable = true,
+                            license = null
+                        ))
+                    } else if (
+                        depth < maxDepth &&
+                        target.toHttpUrl().host == host &&
+                        isLikelyDirectoryOrListing(target, label) &&
+                        !visited.contains(target)
+                    ) {
+                        queue.add(target to depth + 1)
+                    }
+                }
+            }
+
+            // Stop at the first indexed result page that yields relevant, verified MP3s.
+            if (pageResults.isNotEmpty()) return@withContext pageResults.values.take(60)
+        }
+        emptyList()
     }
 
-    private fun searchIndex(query: String): List<String> {
+    private fun searchIndex(query: String): List<IndexedPage> {
         val url = "https://api.mwmbl.org/api/v2/search/".toHttpUrl().newBuilder()
             .addQueryParameter("q", query)
             .build()
@@ -120,8 +141,13 @@ class WebDiscoveryProvider(
             buildList {
                 for (i in 0 until minOf(results.length(), 12)) {
                     val item = results.optJSONObject(i) ?: continue
-                    val link = item.optString("url").takeIf { it.startsWith("https://") || it.startsWith("http://") }
-                    link?.let(::add)
+                    val link = item.optString("url")
+                        .takeIf { it.startsWith("https://") || it.startsWith("http://") } ?: continue
+                    add(IndexedPage(
+                        url = link,
+                        title = item.optString("title"),
+                        snippet = item.optString("description").ifBlank { item.optString("snippet") }
+                    ))
                 }
             }
         } catch (_: Exception) {
@@ -129,23 +155,33 @@ class WebDiscoveryProvider(
         }
     }
 
-    private fun fetchHtml(url: String): org.jsoup.nodes.Document? {
+    private fun indexedPageScore(page: IndexedPage, query: String): Int =
+        relevanceScore("${page.title} ${page.snippet}", query)
+
+    private fun relevanceScore(text: String, query: String): Int {
+        val tokens = query.lowercase().split(Regex("\\s+")).filter { it.length > 1 }.distinct()
+        if (tokens.isEmpty()) return 0
+        val normalized = text.lowercase()
+        val hits = tokens.count { normalized.contains(it) }
+        return if (hits == 0) 0 else hits * 10 + if (hits == tokens.size) 10 else 0
+    }
+
+    private fun fetchHtml(url: String): Document? {
         return try {
-        client.newCall(
-            Request.Builder().url(url)
-                .header("User-Agent", "MP3Hunter/1.0 (public audio link discovery)")
-                .header("Accept", "text/html,application/xhtml+xml")
-                .build()
-        ).execute().use { response ->
-            if (!response.isSuccessful) return null
-            val type = response.header("Content-Type").orEmpty().lowercase()
-            if (!type.contains("text/html") && !type.contains("application/xhtml")) return null
-            // Ignore challenge/interstitial pages; never attempt to solve them.
-            val html = response.body?.string()?.take(1_500_000) ?: return null
-            if (html.contains("captcha", true) || html.contains("verify you are human", true) ||
-                html.contains("checking your browser", true)) return null
-            Jsoup.parse(html, url)
-        }
+            client.newCall(
+                Request.Builder().url(url)
+                    .header("User-Agent", "MP3Hunter/1.0 (public audio link discovery)")
+                    .header("Accept", "text/html,application/xhtml+xml")
+                    .build()
+            ).execute().use { response ->
+                if (!response.isSuccessful) return null
+                val type = response.header("Content-Type").orEmpty().lowercase()
+                if (!type.contains("text/html") && !type.contains("application/xhtml")) return null
+                val html = response.body?.string()?.take(1_500_000) ?: return null
+                if (html.contains("captcha", true) || html.contains("verify you are human", true) ||
+                    html.contains("checking your browser", true)) return null
+                Jsoup.parse(html, url)
+            }
         } catch (_: Exception) {
             null
         }
