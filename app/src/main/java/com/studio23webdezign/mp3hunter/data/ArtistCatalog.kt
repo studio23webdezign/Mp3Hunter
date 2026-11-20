@@ -189,8 +189,6 @@ object ArtistCatalog {
         Artist("Sipho Makhabane"),
         Artist("Zaza Mokhethi"),
         Artist("Nqubeko Mbatha"),
-        Artist("Afrikaans and alternative South African artists
-        "),
         Artist("Bok van Blerk"),
         Artist("Kurt Darren"),
         Artist("Steve Hofmeyr"),
