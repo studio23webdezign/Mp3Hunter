@@ -6,14 +6,18 @@ data class SearchPlan(
     val originalQuery: String,
     val normalizedQuery: String,
     val markets: List<MusicMarket>,
-    val alternateQueries: List<String> = emptyList()
-)
+    val alternateQueries: List<String> = emptyList(),
+    val page: Int = 1
+) {
+    init { require(page >= 1) { "Search page must be at least 1" } }
+}
 
 object SearchPlanner {
     fun create(
         query: String,
         canonicalArtist: String? = null,
-        alternateQueries: List<String> = emptyList()
+        alternateQueries: List<String> = emptyList(),
+        page: Int = 1
     ): SearchPlan {
         val cleaned = query.trim()
         val effective = canonicalArtist ?: cleaned
@@ -25,7 +29,8 @@ object SearchPlanner {
                 .map { it.trim() }
                 .filter { it.isNotBlank() && !it.equals(effective, ignoreCase = true) }
                 .distinctBy { it.lowercase() }
-                .take(3)
+                .take(3),
+            page = page.coerceAtLeast(1)
         )
     }
 }
