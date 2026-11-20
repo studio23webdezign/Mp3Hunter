@@ -11,10 +11,6 @@ import org.jsoup.Jsoup
 import java.io.IOException
 import java.net.URLDecoder
 import java.util.concurrent.TimeUnit
-import com.studio23webdezign.mp3hunter.search.dork.DorkMarket
-import com.studio23webdezign.mp3hunter.search.dork.DorkQuery
-import com.studio23webdezign.mp3hunter.search.dork.DorkQueryEngine
-import com.studio23webdezign.mp3hunter.search.dork.DorkSearchRequest
 
 /**
  * Discovers publicly indexed pages with Mwmbl, then inspects reachable HTML pages for
@@ -44,33 +40,15 @@ class WebDiscoveryProvider(
         if (terms.isEmpty()) return@withContext emptyList()
 
         val discoveredPages = linkedSetOf<String>()
-        val dorkCandidates = buildList {
-            if (MusicMarket.SOUTH_AFRICAN in plan.markets) {
-                addAll(
-                    DorkQueryEngine.generate(
-                        DorkSearchRequest(
-                            query = plan.normalizedQuery,
-                            aliases = plan.alternateQueries,
-                            market = DorkMarket.SOUTH_AFRICAN,
-                            maxQueries = 100
-                        )
-                    )
-                )
+        // Mwmbl is a conventional full-text index, not a Google-operator interpreter.
+        // Keep its queries natural-language; Google-specific dorks are exposed separately
+        // through the DORKS screen and opened as user-initiated Google searches.
+        val searchQueries = buildList {
+            terms.take(3).forEach { term ->
+                add("\"$term\" mp3")
+                add("\"$term\" music audio")
             }
-            if (MusicMarket.INTERNATIONAL in plan.markets) {
-                addAll(
-                    DorkQueryEngine.generate(
-                        DorkSearchRequest(
-                            query = plan.normalizedQuery,
-                            aliases = plan.alternateQueries,
-                            market = DorkMarket.INTERNATIONAL,
-                            maxQueries = 100
-                        )
-                    )
-                )
-            }
-        }
-        val searchQueries = selectDiverseQueries(dorkCandidates, limit = 8).map { it.value }
+        }.distinct().take(6)
 
         // Mwmbl anonymous API: one request per second, with a 1,000 request/month quota.
         searchQueries.forEachIndexed { index, q ->
@@ -124,26 +102,6 @@ class WebDiscoveryProvider(
             }
         }
         found.values.take(60)
-    }
-
-    /**
-     * Chooses one high-ranked query from each pattern family before spending the
-     * remaining request budget. This gives broader coverage per indexed-search call.
-     */
-    private fun selectDiverseQueries(candidates: List<DorkQuery>, limit: Int): List<DorkQuery> {
-        val ranked = candidates.distinctBy { it.value.lowercase() }
-            .sortedByDescending { it.priority }
-        val selected = mutableListOf<DorkQuery>()
-        val usedFamilies = mutableSetOf<String>()
-        ranked.forEach { candidate ->
-            if (selected.size < limit && usedFamilies.add(candidate.family)) {
-                selected += candidate
-            }
-        }
-        if (selected.size < limit) {
-            ranked.filterNot { it in selected }.take(limit - selected.size).forEach(selected::add)
-        }
-        return selected
     }
 
     private fun searchIndex(query: String): List<String> {
