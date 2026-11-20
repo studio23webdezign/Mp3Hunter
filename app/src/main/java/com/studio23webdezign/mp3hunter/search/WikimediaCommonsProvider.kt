@@ -56,6 +56,7 @@ class WikimediaCommonsProvider(
                     val direct = info.optString("url").takeIf { it.startsWith("https://") } ?: continue
                     // MP3 HUNTER's download action is specifically for MP3 files.
                     if (mime != "audio/mpeg" || !direct.substringBefore('?').endsWith(".mp3", true)) continue
+                    val verified = verifyMp3(direct) ?: continue
 
                     val metadata = info.optJSONObject("extmetadata") ?: JSONObject()
                     fun metadataValue(key: String): String? =
@@ -80,7 +81,7 @@ class WikimediaCommonsProvider(
                             artist = metadataValue("Artist"),
                             sourceName = providerName,
                             pageUrl = descriptionUrl,
-                            directAudioUrl = direct,
+                            directAudioUrl = verified,
                             isDownloadAvailable = true,
                             license = metadataValue("LicenseShortName")
                         )
@@ -90,5 +91,18 @@ class WikimediaCommonsProvider(
         } catch (_: IOException) {
             emptyList()
         }
+    }
+
+    private fun verifyMp3(url: String): String? = try {
+        client.newCall(
+            Request.Builder().url(url).head()
+                .header("User-Agent", "MP3Hunter/0.1")
+                .build()
+        ).execute().use { response ->
+            val mime = response.header("Content-Type").orEmpty().substringBefore(';').lowercase()
+            if (response.isSuccessful && mime == "audio/mpeg") url else null
+        }
+    } catch (_: IOException) {
+        null
     }
 }
