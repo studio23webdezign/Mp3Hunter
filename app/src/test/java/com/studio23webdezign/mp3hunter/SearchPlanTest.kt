@@ -15,10 +15,10 @@ class SearchPlanTest {
         assertEquals("kabza de smal", plan.originalQuery)
         assertEquals("Kabza De Small", plan.normalizedQuery)
     }
-    @Test fun downloadsRequireExplicitPermissionAndHttps() {
-        val allowed = MusicResult("Track", "Artist", "Archive", "https://archive.org/details/x", "https://archive.org/download/x.mp3", true)
+    @Test fun downloadsRequireDirectVerifiedHttpsAndDoNotDependOnLicenceMetadata() {
+        val allowed = MusicResult("Track", "Artist", "Archive", "https://archive.org/details/x", "https://archive.org/download/x.mp3", true, "copyright status not supplied")
         assertTrue(allowed.canDownload)
-        assertFalse(allowed.copy(isPermittedDownload = false).canDownload)
+        assertFalse(allowed.copy(isDownloadAvailable = false).canDownload)
         assertFalse(allowed.copy(directAudioUrl = "http://example.com/track.mp3").canDownload)
     }
 }
