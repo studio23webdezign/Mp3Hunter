@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/** Internet Archive search; downloads require an explicit permissive licence and verified audio response. */
+/** Internet Archive search; direct downloads require a public, verified HTTPS MP3 URL. */
 class InternetArchiveProvider(
     private val client: OkHttpClient = OkHttpClient.Builder().callTimeout(25, TimeUnit.SECONDS).build()
 ) : MusicSearchProvider {
@@ -56,20 +56,20 @@ class InternetArchiveProvider(
         val license = listOf("licenseurl", "license", "rights")
             .map { metadata.optString(it) }
             .firstOrNull { it.isNotBlank() }
-        val permitted = LicensePolicy.isDownloadPermitted(license.orEmpty())
+        // Rights metadata is retained for transparency, but it is not used as an in-app download gate.
         val files = root.optJSONArray("files") ?: return null
         val mp3 = (0 until files.length()).mapNotNull { files.optJSONObject(it) }.firstOrNull {
             it.optString("name").endsWith(".mp3", true) && it.optString("source") != "metadata" && it.optString("private") != "true"
         }
         val filename = mp3?.optString("name")?.takeIf(String::isNotBlank)
-        val direct = if (permitted && filename != null) verifyAudioUrl(id, filename) else null
+        val direct = if (filename != null) verifyAudioUrl(id, filename) else null
         return MusicResult(
             title = title,
             artist = creator,
             sourceName = providerName,
             pageUrl = "https://archive.org/details/$id",
             directAudioUrl = direct,
-            isPermittedDownload = direct != null && permitted,
+            isDownloadAvailable = direct != null,
             license = license
         )
     }
