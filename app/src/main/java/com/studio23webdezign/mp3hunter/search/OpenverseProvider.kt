@@ -92,7 +92,7 @@ class OpenverseProvider(
     private fun isExcludedUrl(url: String): Boolean = try {
         val host = url.toHttpUrl().host.lowercase()
         host == "archive.org" || host.endsWith(".archive.org") ||
-            host == "commons.wikimedia.org" || host.endsWith(".commons.wikimedia.org")
+            host == "wikimedia.org" || host.endsWith(".wikimedia.org")
     } catch (_: Exception) {
         true
     }
