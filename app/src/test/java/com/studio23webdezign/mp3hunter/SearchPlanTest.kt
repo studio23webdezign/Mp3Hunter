@@ -15,6 +15,14 @@ class SearchPlanTest {
         assertEquals("kabza de smal", plan.originalQuery)
         assertEquals("Kabza De Small", plan.normalizedQuery)
     }
+    @Test fun includesKnownArtistAliasesAsAlternateSearchTerms() {
+        val plan = SearchPlanner.create("kabza de smal", "Kabza De Small", listOf("Kabza Da Small", "Kabza De Smal"))
+        assertEquals(listOf("Kabza Da Small", "Kabza De Smal"), plan.alternateQueries)
+    }
+    @Test fun removesDuplicateAndCanonicalAlternateQueries() {
+        val plan = SearchPlanner.create("kabza", "Kabza De Small", listOf("Kabza De Small", "Kabza", "Kabza"))
+        assertEquals(listOf("Kabza"), plan.alternateQueries)
+    }
     @Test fun downloadsRequireDirectVerifiedHttpsAndDoNotDependOnLicenceMetadata() {
         val allowed = MusicResult("Track", "Artist", "Archive", "https://archive.org/details/x", "https://archive.org/download/x.mp3", true, "copyright status not supplied")
         assertTrue(allowed.canDownload)
