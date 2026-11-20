@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -43,6 +44,10 @@ fun DorkSearchPanel(modifier: Modifier = Modifier) {
     val uriHandler = LocalUriHandler.current
     val artistMatcher = remember { ArtistMatcher(ArtistCatalog.artists) }
     val artistMatch = remember(query) { artistMatcher.match(query) }
+    val artistSuggestions = remember(query) {
+        if (query.isBlank() || artistMatch != null) emptyList()
+        else artistMatcher.suggestions(query).map { it.artist.canonicalName }.distinct().take(3)
+    }
     val effectiveQuery = artistMatch?.artist?.canonicalName ?: query
     val aliases = artistMatch?.artist?.aliases.orEmpty()
     val queries = remember(effectiveQuery, aliases, intent, market) {
@@ -70,6 +75,17 @@ fun DorkSearchPanel(modifier: Modifier = Modifier) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary
             )
+        }
+        if (artistSuggestions.isNotEmpty()) {
+            Text("POSSIBLE ARTIST SPELLINGS", style = MaterialTheme.typography.labelSmall)
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                artistSuggestions.forEach { suggestion ->
+                    AssistChip(
+                        onClick = { query = suggestion; intent = DorkIntent.ARTIST },
+                        label = { Text(suggestion) }
+                    )
+                }
+            }
         }
         OutlinedTextField(
             value = query,
