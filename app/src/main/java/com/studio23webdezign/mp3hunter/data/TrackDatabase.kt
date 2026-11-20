@@ -1,6 +1,7 @@
 package com.studio23webdezign.mp3hunter.data
 
 import androidx.room.Dao
+import androidx.room.ColumnInfo
 import androidx.room.Database
 import androidx.room.Entity
 import androidx.room.Insert
@@ -17,7 +18,7 @@ data class SavedTrack(
     val artist: String?,
     val sourceName: String,
     val directAudioUrl: String?,
-    val isPermittedDownload: Boolean,
+    @ColumnInfo(name = "isPermittedDownload") val isDownloadAvailable: Boolean,
     val isFavorite: Boolean = false,
     val lastSeenAt: Long = System.currentTimeMillis()
 )
@@ -30,13 +31,13 @@ interface TrackDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertIfMissing(track: SavedTrack)
 
-    @Query("UPDATE tracks SET title = :title, artist = :artist, sourceName = :sourceName, directAudioUrl = :audioUrl, isPermittedDownload = :permitted, lastSeenAt = :seenAt WHERE pageUrl = :url")
-    suspend fun updateSearchMetadata(url: String, title: String, artist: String?, sourceName: String, audioUrl: String?, permitted: Boolean, seenAt: Long)
+    @Query("UPDATE tracks SET title = :title, artist = :artist, sourceName = :sourceName, directAudioUrl = :audioUrl, isPermittedDownload = :available, lastSeenAt = :seenAt WHERE pageUrl = :url")
+    suspend fun updateSearchMetadata(url: String, title: String, artist: String?, sourceName: String, audioUrl: String?, available: Boolean, seenAt: Long)
 
     @Transaction
     suspend fun recordSearch(track: SavedTrack) {
         insertIfMissing(track)
-        updateSearchMetadata(track.pageUrl, track.title, track.artist, track.sourceName, track.directAudioUrl, track.isPermittedDownload, track.lastSeenAt)
+        updateSearchMetadata(track.pageUrl, track.title, track.artist, track.sourceName, track.directAudioUrl, track.isDownloadAvailable, track.lastSeenAt)
     }
 
     @Query("SELECT * FROM tracks WHERE isFavorite = 1 ORDER BY title COLLATE NOCASE")
