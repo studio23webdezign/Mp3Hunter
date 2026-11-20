@@ -65,6 +65,8 @@ object DorkQueryEngine {
     private val sourceHints = listOf(
         "download", "audio", "music", "tracks", "songs", "media", "files"
     )
+    private val excludedSites = "-site:archive.org -site:commons.wikimedia.org"
+    private val southAfricanDomains = listOf("co.za", "org.za", "net.za", "ac.za")
 
     fun generate(request: DorkSearchRequest): List<DorkQuery> {
         val terms = (listOf(request.query) + request.aliases)
@@ -76,7 +78,8 @@ object DorkQueryEngine {
 
         val output = linkedMapOf<String, DorkQuery>()
         fun add(query: String, family: String, priority: Int, market: DorkMarket = request.market) {
-            val normalized = query.trim().replace(Regex("\\s+"), " ")
+            val normalized = (query.trim().replace(Regex("\\s+"), " ") + " " + excludedSites)
+                .trim()
             if (normalized.isNotBlank()) {
                 output.putIfAbsent(normalized.lowercase(), DorkQuery(normalized, family, priority, market))
             }
@@ -130,7 +133,9 @@ object DorkQueryEngine {
         if (request.market == DorkMarket.SOUTH_AFRICAN || request.market == DorkMarket.BOTH) {
             terms.forEach { term ->
                 val q = quoteIfPhrase(term)
-                add("$q mp3 site:co.za", "south-african-domain", 88, DorkMarket.SOUTH_AFRICAN)
+                southAfricanDomains.forEachIndexed { index, domain ->
+                    add("$q mp3 site:$domain", "south-african-domain", 88 - index, DorkMarket.SOUTH_AFRICAN)
+                }
                 add("$q music mp3 South Africa", "south-african-context", 79, DorkMarket.SOUTH_AFRICAN)
             }
         }
