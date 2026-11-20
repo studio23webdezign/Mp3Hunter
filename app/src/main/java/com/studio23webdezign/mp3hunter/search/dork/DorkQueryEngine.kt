@@ -103,6 +103,16 @@ object DorkQueryEngine {
             request.year?.let { add("$exact mp3 $it", "year", basePriority - 36) }
         }
 
+        // Market-specific expansion. Global queries remain available in BOTH mode;
+        // South African domain/context queries are added as a separate pass.
+        if (request.market == DorkMarket.SOUTH_AFRICAN || request.market == DorkMarket.BOTH) {
+            terms.forEach { term ->
+                val q = quoteIfPhrase(term)
+                add("$q mp3 site:co.za", "south-african-domain", 88, DorkMarket.SOUTH_AFRICAN)
+                add("$q music mp3 South Africa", "south-african-context", 79, DorkMarket.SOUTH_AFRICAN)
+            }
+        }
+
         // Intent-specific combinations.
         when (request.intent) {
             DorkIntent.ARTIST -> terms.forEach { term ->
