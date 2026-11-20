@@ -120,7 +120,7 @@ object ArtistCatalog {
         Artist("Usher"),
         Artist("21 Savage"),
         Artist("50 Cent"),
-        Artist("A$AP Rocky", listOf("ASAP Rocky")),
+        Artist("A\\$AP Rocky", listOf("ASAP Rocky")),
         Artist("Alicia Keys"),
         Artist("Blackpink", listOf("BLACKPINK")),
         Artist("BTS"),
