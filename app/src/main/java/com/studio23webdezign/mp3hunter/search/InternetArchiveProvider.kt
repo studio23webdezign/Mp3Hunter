@@ -20,9 +20,9 @@ class InternetArchiveProvider(
         val terms = (listOf(plan.normalizedQuery) + plan.alternateQueries)
             .distinctBy { it.lowercase() }
             .take(4)
-        val south = terms.flatMap { searchMarket(it, true, 4) }
+        val south = terms.flatMap { searchMarket(it, true, 4, plan.page) }
             .distinctBy { it.pageUrl }.take(12)
-        val international = terms.flatMap { searchMarket(it, false, 4) }
+        val international = terms.flatMap { searchMarket(it, false, 4, plan.page) }
             .distinctBy { it.pageUrl }.take(12)
 
         // Interleave the two discovery lanes so one catalogue segment cannot dominate the list.
@@ -34,7 +34,7 @@ class InternetArchiveProvider(
         }.distinctBy { it.pageUrl }
     }
 
-    private fun searchMarket(query: String, southAfrican: Boolean, rows: Int): List<MusicResult> {
+    private fun searchMarket(query: String, southAfrican: Boolean, rows: Int, page: Int): List<MusicResult> {
         val escaped = query.replace("\\", " ").replace("\"", " ").trim()
         if (escaped.isBlank()) return emptyList()
         val phrase = """(title:"$escaped" OR creator:"$escaped")"""
@@ -61,7 +61,7 @@ class InternetArchiveProvider(
             .addQueryParameter("fl[]", "title")
             .addQueryParameter("fl[]", "creator")
             .addQueryParameter("rows", rows.toString())
-            .addQueryParameter("page", "1")
+            .addQueryParameter("page", page.toString())
             .addQueryParameter("output", "json")
             .build()
         val raw = client.newCall(
