@@ -33,6 +33,7 @@ import com.studio23webdezign.mp3hunter.search.WebDiscoveryProvider
 import com.studio23webdezign.mp3hunter.search.MusicResult
 import com.studio23webdezign.mp3hunter.search.SearchPlanner
 import com.studio23webdezign.mp3hunter.search.TrackPlayback
+import com.studio23webdezign.mp3hunter.ui.DorkSearchPanel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -100,7 +101,7 @@ private fun Mp3HunterApp(context: Context) {
                     }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                    listOf("SEARCH", "FAVORITES", "HISTORY").forEach { tab ->
+                    listOf("SEARCH", "DORKS", "FAVORITES", "HISTORY").forEach { tab ->
                         FilterChip(
                             selected = selectedTab == tab,
                             onClick = { selectedTab = tab; if (tab != "SEARCH") loadLibrary() },
@@ -260,6 +261,9 @@ private fun Mp3HunterApp(context: Context) {
                         } else if (!loading && message == null) {
                             DiscoveryIntro()
                         }
+                    }
+                    "DORKS" -> {
+                        DorkSearchPanel(modifier = Modifier.weight(1f).padding(top = 14.dp, bottom = 8.dp))
                     }
                     "FAVORITES" -> {
                         Text("YOUR SAVED TRACKS", color = Muted, fontSize = 10.sp, modifier = Modifier.padding(vertical = 12.dp))
