@@ -11,7 +11,7 @@ import kotlinx.coroutines.withContext
 
 /**
  * Searches Wikimedia Commons' public file catalogue for MP3 audio.
- * It only exposes direct files returned by the Commons API; it does not scrape third-party pages.
+ * Each known artist spelling is searched independently; direct files are verified before use.
  */
 class WikimediaCommonsProvider(
     private val client: OkHttpClient = OkHttpClient.Builder()
@@ -21,32 +21,42 @@ class WikimediaCommonsProvider(
     override val providerName = "Wikimedia Commons"
 
     override suspend fun search(plan: SearchPlan): List<MusicResult> = withContext(Dispatchers.IO) {
-        val query = plan.normalizedQuery.trim()
-        if (query.isBlank()) return@withContext emptyList()
+        val terms = (listOf(plan.normalizedQuery) + plan.alternateQueries)
+            .map(String::trim)
+            .filter { it.isNotBlank() }
+            .distinctBy { it.lowercase() }
+            .take(4)
+        if (terms.isEmpty()) return@withContext emptyList()
 
+        buildList {
+            terms.forEach { term -> addAll(searchTerm(term)) }
+        }.distinctBy { it.directAudioUrl ?: it.pageUrl }.take(12)
+    }
+
+    private fun searchTerm(query: String): List<MusicResult> {
         val url = "https://commons.wikimedia.org/w/api.php".toHttpUrl().newBuilder()
             .addQueryParameter("action", "query")
             .addQueryParameter("generator", "search")
             .addQueryParameter("gsrsearch", query)
             .addQueryParameter("gsrnamespace", "6")
-            .addQueryParameter("gsrlimit", "30")
+            .addQueryParameter("gsrlimit", "20")
             .addQueryParameter("prop", "imageinfo")
             .addQueryParameter("iiprop", "url|mime|extmetadata")
             .addQueryParameter("format", "json")
             .addQueryParameter("formatversion", "2")
             .build()
 
-        try {
+        return try {
             val raw = client.newCall(
                 Request.Builder().url(url)
                     .header("User-Agent", "MP3Hunter/0.1 (Android music discovery)")
                     .build()
             ).execute().use { response ->
                 if (response.isSuccessful) response.body?.string() else null
-            } ?: return@withContext emptyList()
+            } ?: return emptyList()
 
             val pages = JSONObject(raw).optJSONObject("query")?.optJSONArray("pages")
-                ?: return@withContext emptyList()
+                ?: return emptyList()
 
             buildList {
                 for (index in 0 until pages.length()) {
@@ -54,7 +64,6 @@ class WikimediaCommonsProvider(
                     val info = page.optJSONArray("imageinfo")?.optJSONObject(0) ?: continue
                     val mime = info.optString("mime").lowercase()
                     val direct = info.optString("url").takeIf { it.startsWith("https://") } ?: continue
-                    // MP3 HUNTER's download action is specifically for MP3 files.
                     if (mime != "audio/mpeg" || !direct.substringBefore('?').endsWith(".mp3", true)) continue
                     val verified = verifyMp3(direct) ?: continue
 
@@ -87,7 +96,7 @@ class WikimediaCommonsProvider(
                         )
                     )
                 }
-            }.distinctBy { it.directAudioUrl }.take(12)
+            }
         } catch (_: IOException) {
             emptyList()
         }
