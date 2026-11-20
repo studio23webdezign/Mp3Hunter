@@ -17,7 +17,7 @@ class DorkQueryEngineTest {
         assertTrue(values.any { it.contains("intitle:\"index of\"") })
         assertTrue(values.any { it.contains("inurl:mp3") })
         assertTrue(values.all { it.contains("-site:archive.org") })
-        assertTrue(values.all { it.contains("-site:commons.wikimedia.org") })
+        assertTrue(values.all { it.contains("-site:wikimedia.org") })
     }
 
     @Test
