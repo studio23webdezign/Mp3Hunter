@@ -45,6 +45,23 @@ class DorkQueryEngineTest {
     }
 
     @Test
+    fun includesSouthAfricanDomainPatternsWhenRequested() {
+        val queries = DorkQueryEngine.generate(
+            DorkSearchRequest("Kabza De Small", market = DorkMarket.SOUTH_AFRICAN)
+        )
+        assertTrue(queries.any { it.value.contains("site:co.za") })
+        assertTrue(queries.any { it.market == DorkMarket.SOUTH_AFRICAN })
+    }
+
+    @Test
+    fun doesNotAddSouthAfricanDomainRestrictionToInternationalOnlySearch() {
+        val queries = DorkQueryEngine.generate(
+            DorkSearchRequest("Taylor Swift", market = DorkMarket.INTERNATIONAL)
+        )
+        assertTrue(queries.none { it.value.contains("site:co.za") })
+    }
+
+    @Test
     fun prioritizesExactTrackSearches() {
         val queries = DorkQueryEngine.generate(
             DorkSearchRequest("Imithandazo", intent = DorkIntent.TRACK)
