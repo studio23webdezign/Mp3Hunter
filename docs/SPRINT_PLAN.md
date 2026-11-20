@@ -3,7 +3,7 @@
 Sprints are tracked against committed implementation. A green CI run is required before calling the code validated.
 
 1. **Foundation — implemented:** Kotlin/Compose Android app, Gradle build and GitHub Actions CI.
-2. **Artist intelligence — expanded in code, awaiting CI:** curated South African and international artist names, aliases, high-confidence matching and unit tests for Maskandi/Gqom/local spelling variants.
+2. **Artist intelligence — expanded in code, awaiting CI:** curated South African and international artist names, aliases, high-confidence matching and unit tests for Maskandi/Gqom, regional-language, gospel and Afrikaans performers.
 3. **Search foundation — expanded in code, awaiting CI:** normalized search plan now carries curated alternate artist spellings to providers.
 4. **Catalogue coverage — expanded in code, awaiting CI:** Internet Archive phrase + token matching and genre-subject discovery; Wikimedia Commons and Openverse now query artist aliases; concurrent multi-provider aggregation.
 5. **Listening and personal library — baseline implemented:** Media3 playback for discovered audio, Room-backed favourites and recent search history.
