@@ -29,16 +29,16 @@ class OpenverseProvider(
         if (terms.isEmpty()) return@withContext emptyList()
 
         buildList {
-            terms.forEach { term -> addAll(searchTerm(term)) }
+            terms.forEach { term -> addAll(searchTerm(term, plan.page)) }
         }.distinctBy { it.directAudioUrl ?: it.pageUrl }.take(12)
     }
 
-    private fun searchTerm(query: String): List<MusicResult> {
+    private fun searchTerm(query: String, page: Int): List<MusicResult> {
         val url = "https://api.openverse.org/v1/audio/".toHttpUrl().newBuilder()
             .addQueryParameter("q", query)
             .addQueryParameter("category", "music")
             .addQueryParameter("extension", "mp3")
-            .addQueryParameter("page", "1")
+            .addQueryParameter("page", page.toString())
             .addQueryParameter("page_size", "12")
             .addQueryParameter("filter_dead", "true")
             .build()
