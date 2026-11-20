@@ -46,7 +46,7 @@ internal object Mp3PageMetadataExtractor {
     }
 
     private fun structuredMetadata(page: Document): Pair<String?, String?> {
-        val title = firstMeta(page, "music:song", "og:title", "twitter:title")
+        val title = firstMeta(page, "music:song")
         val artist = firstMeta(page, "music:musician", "music:creator", "author", "article:author")
             ?: page.selectFirst("meta[name=author]")?.attr("content")?.takeIf { it.isNotBlank() }
         var jsonTitle: String? = null
@@ -107,8 +107,8 @@ internal object Mp3PageMetadataExtractor {
 
     private fun cleanTitle(value: String): String =
         value.replace(Regex("(?i)\\.mp3$"), "")
-            .replace(Regex("""\\s*[-|_]\\s*(official audio|official video|free download|download mp3).*""", RegexOption.IGNORE_CASE), "")
-            .replace(Regex("""\\s+"""), " ")
+            .replace(Regex("""\s*[-|_]\s*(official audio|official video|free download|download mp3).*""", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("""\s+"""), " ")
             .trim(' ', '-', '_', '|')
 
     private fun pageMentions(page: Document, artist: String): Boolean =
