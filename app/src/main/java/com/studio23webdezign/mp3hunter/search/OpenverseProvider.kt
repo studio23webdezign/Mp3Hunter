@@ -11,8 +11,7 @@ import kotlinx.coroutines.withContext
 
 /**
  * Searches Openverse's anonymous public audio-search API.
- * Openverse aggregates audio from multiple public providers; direct MP3 URLs are checked
- * before they are exposed to the app's playback/download actions.
+ * Each known artist spelling is searched independently; results are merged and deduplicated.
  */
 class OpenverseProvider(
     private val client: OkHttpClient = OkHttpClient.Builder()
@@ -22,32 +21,42 @@ class OpenverseProvider(
     override val providerName = "Openverse"
 
     override suspend fun search(plan: SearchPlan): List<MusicResult> = withContext(Dispatchers.IO) {
-        val query = plan.normalizedQuery.trim().take(200)
-        if (query.isBlank()) return@withContext emptyList()
+        val terms = (listOf(plan.normalizedQuery) + plan.alternateQueries)
+            .map { it.trim().take(200) }
+            .filter { it.isNotBlank() }
+            .distinctBy { it.lowercase() }
+            .take(4)
+        if (terms.isEmpty()) return@withContext emptyList()
 
+        buildList {
+            terms.forEach { term -> addAll(searchTerm(term)) }
+        }.distinctBy { it.directAudioUrl ?: it.pageUrl }.take(12)
+    }
+
+    private fun searchTerm(query: String): List<MusicResult> {
         val url = "https://api.openverse.org/v1/audio/".toHttpUrl().newBuilder()
             .addQueryParameter("q", query)
             .addQueryParameter("category", "music")
             .addQueryParameter("extension", "mp3")
             .addQueryParameter("page", "1")
-            .addQueryParameter("page_size", "20")
+            .addQueryParameter("page_size", "12")
             .addQueryParameter("filter_dead", "true")
             .build()
 
-        try {
+        return try {
             val raw = client.newCall(
                 Request.Builder().url(url)
                     .header("User-Agent", "MP3Hunter/0.1 (Android music discovery)")
                     .build()
             ).execute().use { response ->
                 if (response.isSuccessful) response.body?.string() else null
-            } ?: return@withContext emptyList()
+            } ?: return emptyList()
 
-            val results = JSONObject(raw).optJSONArray("results") ?: return@withContext emptyList()
+            val results = JSONObject(raw).optJSONArray("results") ?: return emptyList()
             buildList {
                 var checked = 0
                 for (index in 0 until results.length()) {
-                    if (checked >= 10) break
+                    if (checked >= 4) break
                     val item = results.optJSONObject(index) ?: continue
                     val direct = item.optString("url").takeIf { it.startsWith("https://") } ?: continue
                     checked++
@@ -57,9 +66,9 @@ class OpenverseProvider(
                         .takeIf { it.startsWith("https://") }
                         ?: item.optString("detail_url").takeIf { it.startsWith("https://") }
                         ?: direct
-
                     val source = item.optString("provider").takeIf { it.isNotBlank() }
                     val rights = item.optString("license").takeIf { it.isNotBlank() }
+
                     add(
                         MusicResult(
                             title = item.optString("title").ifBlank { "Untitled audio" },
@@ -72,7 +81,7 @@ class OpenverseProvider(
                         )
                     )
                 }
-            }.distinctBy { it.directAudioUrl }.take(10)
+            }
         } catch (_: IOException) {
             emptyList()
         }
