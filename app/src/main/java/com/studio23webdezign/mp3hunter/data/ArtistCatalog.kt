@@ -231,6 +231,8 @@ object ArtistCatalog {
         Artist("Themba"),
         Artist("Prince Bulo"),
 
+        // International artists
+
         // Additional international pop, R&B and soul artists
         Artist("Celine Dion"),
         Artist("Mariah Carey"),
@@ -418,7 +420,6 @@ object ArtistCatalog {
         Artist("PSY"),
         Artist("G-Dragon"),
 
-        // International artists
         Artist("Taylor Swift"),
         Artist("Drake"),
         Artist("The Weeknd", listOf("Weeknd")),
