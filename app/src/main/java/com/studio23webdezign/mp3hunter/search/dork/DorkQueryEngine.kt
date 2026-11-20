@@ -65,7 +65,7 @@ object DorkQueryEngine {
     private val sourceHints = listOf(
         "download", "audio", "music", "tracks", "songs", "media", "files"
     )
-    private val excludedSites = "-site:archive.org -site:commons.wikimedia.org"
+    private val excludedSites = "-site:archive.org -site:wikimedia.org"
     private val southAfricanDomains = listOf("co.za", "org.za", "net.za", "ac.za")
 
     fun generate(request: DorkSearchRequest): List<DorkQuery> {
