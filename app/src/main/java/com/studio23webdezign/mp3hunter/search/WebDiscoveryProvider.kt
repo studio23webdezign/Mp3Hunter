@@ -185,5 +185,5 @@ class WebDiscoveryProvider(
 
     private fun isExcludedHost(host: String): Boolean =
         host == "archive.org" || host.endsWith(".archive.org") ||
-            host == "commons.wikimedia.org" || host.endsWith(".commons.wikimedia.org")
+            host == "wikimedia.org" || host.endsWith(".wikimedia.org")
 }
