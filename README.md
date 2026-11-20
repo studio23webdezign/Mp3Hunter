@@ -4,9 +4,10 @@ An Android music-discovery app with equal search opportunities for South African
 
 ## Current build
 - Kotlin + Jetpack Compose.
-- Artist spelling recognition and typo suggestions.
+- Expanded South African artist catalogue covering Amapiano, Maskandi, Gqom, House, Gospel, Kwaito, traditional music, SA Hip-Hop and more.
+- High-confidence artist spelling recognition with curated aliases; known aliases are searched across all three catalogue providers.
+- Internet Archive searches exact artist/title phrases and token combinations, with genre-subject discovery for explicit South African genre searches.
 - Concurrent public-catalogue search across Internet Archive, Wikimedia Commons and Openverse.
-- Broader South African discovery queries so local records are not excluded just because genre/country tags are missing.
 - MP3 discovery from direct public HTTPS files; the download action appears only for verified MPEG audio URLs.
 - Media3 playback for discovered audio.
 - Room-backed favourites and recent search history.
