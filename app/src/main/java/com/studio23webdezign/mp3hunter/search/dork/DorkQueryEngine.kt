@@ -44,14 +44,23 @@ object DorkQueryEngine {
     private val directoryFilters = listOf(
         "intitle:\"index of\" mp3",
         "intitle:\"index of\"",
+        "intitle:\"index of\" \"parent directory\"",
         "inurl:mp3",
         "inurl:music",
-        "inurl:audio"
+        "inurl:audio",
+        "inurl:uploads",
+        "inurl:downloads",
+        "inurl:files",
+        "inurl:songs",
+        "inurl:tracks",
+        "inurl:wp-content/uploads"
     )
     private val filenameFilters = listOf(
         "\".mp3\"",
         "\"mp3\"",
-        "intext:mp3"
+        "intext:mp3",
+        "intext:\"audio file\"",
+        "intext:\"download mp3\""
     )
     private val sourceHints = listOf(
         "download", "audio", "music", "tracks", "songs", "media", "files"
@@ -88,12 +97,25 @@ object DorkQueryEngine {
                 add("$exact $filter", "directory-index", basePriority - 8 - i)
             }
 
+            // Cross-combinations find pages where file type and path clues are split
+            // across the URL, title, and indexed page text.
+            fileFilters.forEachIndexed { fileIndex, fileFilter ->
+                directoryFilters.forEachIndexed { directoryIndex, directoryFilter ->
+                    add(
+                        "$exact $fileFilter $directoryFilter",
+                        "file-directory-combination",
+                        basePriority - 12 - fileIndex - directoryIndex
+                    )
+                }
+            }
+
             // Filename and page-content clues.
             filenameFilters.forEachIndexed { i, filter ->
                 add("$exact $filter", "filename", basePriority - 15 - i)
             }
             sourceHints.forEachIndexed { i, hint ->
                 add("$exact mp3 $hint", "source-hint", basePriority - 22 - i)
+                add("$exact intitle:\"index of\" $hint", "directory-source-hint", basePriority - 27 - i)
             }
 
             // Alternate syntax helps surface differently indexed pages.
