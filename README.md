@@ -5,9 +5,10 @@ An Android music-discovery app with equal search opportunities for South African
 ## Current build
 - Kotlin + Jetpack Compose.
 - Artist spelling recognition and typo suggestions.
-- Search provider architecture with an initial Internet Archive catalogue integration.
-- Metadata and MP3 discovery; in-app downloads are enabled when a direct public HTTPS MP3 URL is exposed and verified as audio.
-- Media3 playback for verified audio.
+- Concurrent public-catalogue search across Internet Archive and Wikimedia Commons.
+- Broader South African discovery queries so local records are not excluded just because genre/country tags are missing.
+- MP3 discovery from direct public HTTPS files; the download action appears only for verified MP3 URLs.
+- Media3 playback for discovered audio.
 - Room-backed favourites and recent search history.
 - GitHub Actions builds/tests the app and uploads a debug APK artifact.
 
@@ -20,7 +21,10 @@ gradle :app:testDebugUnitTest :app:assembleDebug
 
 The debug APK is produced at `app/build/outputs/apk/debug/app-debug.apk`.
 
+## Catalogue coverage
+Internet Archive and Wikimedia Commons are public archives, not complete commercial music catalogues. This improves discovery breadth but will not reliably find every current Amapiano, Maskandi, Gqom, House or international chart release. The app searches both catalogues concurrently and keeps results from one if the other is unavailable.
+
 ## Important
-MP3 HUNTER does not bypass DRM, logins, paywalls, CAPTCHAs or other access controls. Catalogue coverage is not comprehensive: the initial provider searches Internet Archive, and commercial releases may not be available there. A download is offered when the source exposes a direct public HTTPS MP3 URL and its response passes an audio content-type check. MP3 HUNTER does not interpret public availability as a copyright licence; users are responsible for checking source terms and rights before downloading or sharing.
+MP3 HUNTER does not bypass DRM, logins, paywalls, CAPTCHAs or other access controls. A download is offered when a source exposes a direct public HTTPS MP3 URL and the source identifies it as MPEG audio. Public accessibility does not itself grant copyright permission; users are responsible for checking source terms and rights before downloading or sharing.
 
 See [Product Specification](docs/PRODUCT_SPEC.md) and [Sprint Plan](docs/SPRINT_PLAN.md).
