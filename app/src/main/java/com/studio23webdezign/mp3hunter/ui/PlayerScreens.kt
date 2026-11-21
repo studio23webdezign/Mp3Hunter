@@ -11,6 +11,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -18,16 +20,20 @@ import androidx.compose.ui.unit.sp
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.PlayerView
+import com.studio23webdezign.mp3hunter.ui.theme.VibePalette
 import kotlinx.coroutines.delay
 
-private val PlayerLime = Color(0xFFC7F36B)
-private val PlayerMuted = Color(0xFF9BA9BA)
-private val PlayerCard = Color(0xFF172638)
+private val PlayerLime = VibePalette.Champagne
+private val PlayerMuted = VibePalette.Titanium
+private val PlayerCard = VibePalette.Carbon
 
 @Composable
 fun Mp3PlayerScreen(
     player: ExoPlayer,
     currentTitle: String,
+    isVideo: Boolean = false,
+    onVideoChange: (Boolean) -> Unit = {},
     onTitleChange: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -70,14 +76,31 @@ fun Mp3PlayerScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Box(
-                    Modifier.size(150.dp).background(
-                        androidx.compose.ui.graphics.Brush.linearGradient(listOf(Color(0xFF314A39), Color(0xFF203449))),
-                        RoundedCornerShape(28.dp)
-                    ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("♫", color = PlayerLime, fontSize = 64.sp, fontWeight = FontWeight.Light)
+                if (isVideo) {
+                    AndroidView(
+                        factory = { context ->
+                            PlayerView(context).apply {
+                                player = player
+                                useController = false
+                                setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
+                            }
+                        },
+                        update = { view -> view.player = player },
+                        modifier = Modifier.fillMaxWidth().height(220.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                    )
+                } else {
+                    Box(
+                        Modifier.size(190.dp).background(
+                            androidx.compose.ui.graphics.Brush.linearGradient(
+                                listOf(VibePalette.Graphite, VibePalette.Raised, VibePalette.Carbon)
+                            ),
+                            RoundedCornerShape(18.dp)
+                        ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("V", color = PlayerLime, fontSize = 68.sp, fontWeight = FontWeight.Light)
+                    }
                 }
                 Text(currentTitle, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 2)
                 Text(if (isPlaying) "NOW PLAYING" else "READY TO PLAY", color = PlayerMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
@@ -127,10 +150,14 @@ fun Mp3PlayerScreen(
                 val candidate = url.trim()
                 if (candidate.startsWith("https://", true) || candidate.startsWith("http://", true)) {
                     runCatching {
+                        val cleanPath = candidate.substringBefore('?').lowercase()
+                        val videoSource = listOf(".mp4", ".mkv", ".webm", ".mov", ".m4v", ".3gp")
+                            .any { cleanPath.endsWith(it) }
+                        onVideoChange(videoSource)
                         player.setMediaItem(MediaItem.fromUri(candidate))
                         player.prepare()
                         player.play()
-                        onTitleChange(candidate.substringAfterLast('/').substringBefore('?').ifBlank { "Streaming audio" })
+                        onTitleChange(candidate.substringAfterLast('/').substringBefore('?').ifBlank { "Streaming media" })
                         error = null
                     }.onFailure { error = it.localizedMessage ?: "Invalid audio URL." }
                 } else error = "Enter a valid http or https audio URL."
@@ -155,14 +182,14 @@ fun LibraryScreen(
 ) {
     Column(modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Text("YOUR LIBRARY", color = PlayerLime, fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 1.4.sp)
-        Text("Play audio files stored on your device.", color = PlayerMuted, fontSize = 12.sp)
+        Text("Browse audio and video stored on your device.", color = PlayerMuted, fontSize = 12.sp)
         Card(shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = PlayerCard)) {
             Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(if (hasMedia) "CURRENT TRACK" else "YOUR MUSIC STARTS HERE", color = PlayerLime, fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp)
                 Text(if (hasMedia) currentTitle else "No track selected yet", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                Text("Choose an MP3 or another supported audio file using Android's file picker. Your file stays on your device.", color = PlayerMuted, fontSize = 11.sp, lineHeight = 16.sp)
+                Text("Choose music or video using Android's file picker. Your media stays on your device.", color = PlayerMuted, fontSize = 11.sp, lineHeight = 16.sp)
                 Button(onClick = onChooseAudio, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = PlayerLime, contentColor = Color(0xFF101710))) {
-                    Text("CHOOSE AUDIO FILE", fontWeight = FontWeight.Black)
+                    Text("BROWSE MEDIA FILES", fontWeight = FontWeight.Black)
                 }
                 if (hasMedia) TextButton(onClick = onOpenPlayer) { Text("OPEN PLAYER", color = PlayerLime) }
             }
