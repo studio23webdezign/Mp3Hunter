@@ -135,14 +135,14 @@ private fun DorkHunterApp() {
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                                     Icon(Icons.Default.Language, contentDescription = null, tint = Cyan, modifier = Modifier.size(14.dp))
-                                    Text("SEARCH THE OPEN WEB", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.2.sp)
+                                    Text("DISCOVERY ENGINE / 01", color = Cyan, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.4.sp)
                                 }
-                                Text("Find what search engines have indexed.", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold)
-                                Text("Build precise Google dorks, then play audio from a direct link or your device.", color = TextMuted, fontSize = 11.sp, lineHeight = 16.sp)
+                                Text("Search beyond the obvious.", color = Color.White, style = MaterialTheme.typography.headlineMedium)
+                                Text("Targeted web queries. Indexed media. Your player, built in.", color = TextMuted, style = MaterialTheme.typography.bodySmall)
                             }
                         }
                         Spacer(Modifier.height(12.dp))
-                        Text("DORK SEARCH", color = Lime, fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 1.3.sp)
+                        Text("DORK SEARCH", color = Lime, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.5.sp)
                         Spacer(Modifier.height(7.dp))
                         DorkSearchPanel(Modifier.fillMaxWidth().weight(1f).padding(bottom = 8.dp))
                     }
