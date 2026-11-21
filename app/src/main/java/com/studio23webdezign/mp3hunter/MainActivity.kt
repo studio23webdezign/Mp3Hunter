@@ -109,8 +109,8 @@ private fun DorkHunterApp() {
                         Icon(Icons.Default.Headphones, contentDescription = "VIBE PLAYER", tint = Night, modifier = Modifier.padding(10.dp))
                     }
                     Column(Modifier.weight(1f).padding(start = 11.dp)) {
-                        Text("VIBE", color = VibePalette.Pearl, fontSize = 21.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 2.2.sp)
-                        Text("YOUR SOUND. YOUR SPACE.", color = TextMuted, fontSize = 9.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.2.sp)
+                        Text("VIBE", color = VibePalette.Pearl, style = androidx.compose.material3.MaterialTheme.typography.displayMedium, letterSpacing = 1.1.sp)
+                        Text("YOUR SOUND. YOUR SPACE.", color = TextMuted, fontSize = 9.sp, fontWeight = FontWeight.Medium, letterSpacing = 1.5.sp)
                     }
                     Surface(shape = CircleShape, color = VibePalette.Graphite) {
                         Row(Modifier.padding(horizontal = 10.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
