@@ -351,11 +351,22 @@ fun LibraryScreen(
  ) {
     var libraryQuery by remember { mutableStateOf("") }
     var favoritesOnly by remember { mutableStateOf(false) }
-    val visibleTracks = tracks.mapIndexed { index, track -> index to track }.filter { (index, track) ->
-        val matchesQuery = libraryQuery.isBlank() || listOf(track.title, track.artist, track.album).any { it.contains(libraryQuery, ignoreCase = true) }
-        val matchesFavorite = !favoritesOnly || track.uri.toString() in favoriteUrls
-        matchesQuery && matchesFavorite
-    }
+    var sortMode by remember { mutableStateOf("TITLE") }
+    var sortMenuExpanded by remember { mutableStateOf(false) }
+    val visibleTracks = tracks.mapIndexed { index, track -> index to track }
+        .filter { (_, track) ->
+            val matchesQuery = libraryQuery.isBlank() || listOf(track.title, track.artist, track.album).any { it.contains(libraryQuery, ignoreCase = true) }
+            val matchesFavorite = !favoritesOnly || track.uri.toString() in favoriteUrls
+            matchesQuery && matchesFavorite
+        }
+        .let { filtered ->
+            when (sortMode) {
+                "ARTIST" -> filtered.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.second.artist.ifBlank { "Unknown artist" } }.thenBy(String.CASE_INSENSITIVE_ORDER) { it.second.title })
+                "DURATION" -> filtered.sortedByDescending { it.second.durationMs }
+                "RECENT" -> filtered.reversed()
+                else -> filtered.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.second.title })
+            }
+        }
     Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top = 12.dp, bottom = 20.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text("COLLECTION / 03", color = Accent, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.7.sp)
@@ -401,9 +412,24 @@ fun LibraryScreen(
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
             shape = RoundedCornerShape(9.dp)
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(selected = !favoritesOnly, onClick = { favoritesOnly = false }, label = { Text("ALL TRACKS") })
-            FilterChip(selected = favoritesOnly, onClick = { favoritesOnly = true }, label = { Text("FAVOURITES") })
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(selected = !favoritesOnly, onClick = { favoritesOnly = false }, label = { Text("ALL TRACKS") })
+                FilterChip(selected = favoritesOnly, onClick = { favoritesOnly = true }, label = { Text("FAVOURITES") })
+            }
+            Box {
+                TextButton(onClick = { sortMenuExpanded = true }, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)) {
+                    Text("SORT: $sortMode", color = VibePalette.Ice, style = MaterialTheme.typography.labelSmall)
+                }
+                DropdownMenu(expanded = sortMenuExpanded, onDismissRequest = { sortMenuExpanded = false }, containerColor = Panel) {
+                    listOf("TITLE", "ARTIST", "DURATION", "RECENT").forEach { mode ->
+                        DropdownMenuItem(
+                            text = { Text(mode, color = if (sortMode == mode) Accent else VibePalette.Pearl) },
+                            onClick = { sortMode = mode; sortMenuExpanded = false }
+                        )
+                    }
+                }
+            }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Text(if (favoritesOnly) "YOUR FAVOURITES" else "ON THIS DEVICE", color = SecondaryText, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.3.sp)
