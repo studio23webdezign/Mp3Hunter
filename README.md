@@ -1,17 +1,20 @@
-# MP3 HUNTER
+# DORK HUNTER
 
-An Android music-discovery app with equal search opportunities for South African and international music.
+An Android-first advanced search operator builder. Dork Search is the app's primary and default experience.
 
-## Current build
-- Kotlin + Jetpack Compose.
-- Balanced artist spelling catalogue: 205 South African and 206 international artists, spanning Amapiano, Maskandi, Gqom, House, Gospel, Kwaito, regional-language music, Afrikaans music, traditional music and global genres.
-- High-confidence artist spelling recognition with curated aliases; known aliases are searched across all three catalogue providers.
-- Internet Archive searches exact artist/title phrases and token combinations, with genre-subject discovery for explicit South African genre searches.
-- Concurrent public-catalogue search across Internet Archive, Wikimedia Commons and Openverse.
-- MP3 discovery from direct public HTTPS files; the download action appears only for verified MPEG audio URLs.
-- Media3 playback for discovered audio.
-- Room-backed favourites and recent search history.
-- GitHub Actions builds/tests the app and uploads a debug APK artifact.
+## What it does
+- Turns a topic, phrase, artist, track, album or genre into ranked Google-compatible search patterns.
+- Combines exact phrases, site targeting, file-type filters, exclusions and other search operators.
+- Supports general, artist, track, album and genre search intents.
+- Supports global, South African and international search markets.
+- Uses curated artist aliases and spelling suggestions when a known artist is searched.
+- Lets users copy an individual query or open it directly in Google.
+- Keeps the query builder local to the app; Google performs the actual indexed-web search.
+
+## Product scope
+The dedicated MP3 search experience has been removed from the primary app navigation and launcher flow. This project is now focused on broad indexed-web discovery through search-engine operators. It does not claim to crawl the entire internet or access private/unindexed content.
+
+Dork HUNTER does not bypass logins, paywalls, CAPTCHAs, DRM or other access controls. Search results remain subject to the destination website's terms and applicable law.
 
 ## Build
 Requires JDK 17 and Gradle 8.11.1:
@@ -22,10 +25,5 @@ gradle :app:testDebugUnitTest :app:assembleDebug
 
 The debug APK is produced at `app/build/outputs/apk/debug/app-debug.apk`.
 
-## Catalogue coverage
-Internet Archive, Wikimedia Commons and Openverse are public catalogues, not complete commercial music services. Openverse aggregates audio from multiple providers, but none of these sources will reliably contain every current Amapiano, Maskandi, Gqom, House or international chart release. MP3 HUNTER queries all three sources concurrently and keeps results from a healthy source if another is unavailable.
-
-## Important
-MP3 HUNTER does not bypass DRM, logins, paywalls, CAPTCHAs or other access controls. A download is offered when a source exposes a direct public HTTPS URL and the response is verified as MPEG audio. Public accessibility does not itself grant copyright permission; users are responsible for checking source terms and rights before downloading or sharing.
-
-See [Product Specification](docs/PRODUCT_SPEC.md) and [Sprint Plan](docs/SPRINT_PLAN.md).
+## CI
+GitHub Actions runs unit tests and builds a debug APK. The APK is uploaded as the `mp3-hunter-debug-apk` workflow artifact.
