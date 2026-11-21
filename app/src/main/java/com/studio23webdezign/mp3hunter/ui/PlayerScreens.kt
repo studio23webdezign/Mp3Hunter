@@ -13,6 +13,8 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -248,7 +250,9 @@ fun LibraryScreen(
     currentTitle: String,
     hasMedia: Boolean,
     tracks: List<LocalAudioTrack>,
+    favoriteUrls: Set<String>,
     isScanning: Boolean,
+    onToggleFavorite: (LocalAudioTrack) -> Unit,
     onScanLibrary: () -> Unit,
     onPlayTrack: (Int) -> Unit,
     onChooseAudio: () -> Unit,
@@ -293,7 +297,7 @@ fun LibraryScreen(
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Text("ON THIS DEVICE", color = SecondaryText, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.3.sp)
-            Text("${tracks.size} TRACKS", color = VibePalette.Ice, style = MaterialTheme.typography.labelSmall)
+            Text("${tracks.size} TRACKS  ·  ${favoriteUrls.size} FAVOURITES", color = VibePalette.Ice, style = MaterialTheme.typography.labelSmall)
         }
         if (tracks.isEmpty()) {
             Text("Scan your music library to find audio stored on this device.", color = SecondaryText, style = MaterialTheme.typography.bodySmall)
@@ -311,6 +315,13 @@ fun LibraryScreen(
                         Column(Modifier.weight(1f).padding(horizontal = 10.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Text(track.title, color = VibePalette.Pearl, style = MaterialTheme.typography.bodyMedium, maxLines = 1)
                             Text(listOf(track.artist, track.album).filter { it.isNotBlank() }.joinToString(" · ").ifBlank { "Unknown artist" }, color = SecondaryText, style = MaterialTheme.typography.bodySmall, maxLines = 1)
+                        }
+                        IconButton(onClick = { onToggleFavorite(track) }) {
+                            Icon(
+                                if (track.uri.toString() in favoriteUrls) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = if (track.uri.toString() in favoriteUrls) "Remove favourite" else "Add favourite",
+                                tint = if (track.uri.toString() in favoriteUrls) VibePalette.Ice else SecondaryText
+                            )
                         }
                         Text(formatTime(track.durationMs), color = SecondaryText, style = MaterialTheme.typography.labelSmall)
                     }

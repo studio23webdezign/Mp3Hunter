@@ -12,6 +12,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.studio23webdezign.mp3hunter.data.LocalAudioTrack
 import com.studio23webdezign.mp3hunter.data.MediaStoreAudioLibrary
+import com.studio23webdezign.mp3hunter.data.TrackDatabase
+import com.studio23webdezign.mp3hunter.data.SavedTrack
+import androidx.room.Room
+import androidx.compose.runtime.collectAsState
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -102,6 +106,11 @@ private fun DorkHunterApp() {
 @Composable
 private fun DorkHunterContent(player: MediaController) {
     val context = androidx.compose.ui.platform.LocalContext.current
+    val database = remember(context) {
+        Room.databaseBuilder(context.applicationContext, TrackDatabase::class.java, "vibe-library.db").build()
+    }
+    DisposableEffect(database) { onDispose { database.close() } }
+    val favoriteUrls by database.trackDao().favoriteUrls().collectAsState(initial = emptyList())
     var selectedTab by remember { mutableStateOf(AppTab.HOME) }
     var currentTitle by remember { mutableStateOf("Nothing playing") }
     var isPlaying by remember { mutableStateOf(false) }
@@ -114,6 +123,23 @@ private fun DorkHunterContent(player: MediaController) {
     var audioTracks by remember { mutableStateOf(emptyList<LocalAudioTrack>()) }
     var isScanningLibrary by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    fun toggleFavorite(track: LocalAudioTrack) {
+        scope.launch(Dispatchers.IO) {
+            val key = track.uri.toString()
+            val currentlyFavorite = database.trackDao().isFavorite(key) ?: false
+            database.trackDao().upsert(
+                SavedTrack(
+                    pageUrl = key,
+                    title = track.title,
+                    artist = track.artist,
+                    sourceName = "On-device library",
+                    directAudioUrl = key,
+                    isDownloadAvailable = false,
+                    isFavorite = !currentlyFavorite
+                )
+            )
+        }
+    }
     fun scanAudioLibrary() {
         if (!hasAudioPermission) return
         scope.launch {
@@ -229,7 +255,9 @@ private fun DorkHunterContent(player: MediaController) {
                         currentTitle = currentTitle,
                         hasMedia = hasMedia,
                         tracks = audioTracks,
+                        favoriteUrls = favoriteUrls.toSet(),
                         isScanning = isScanningLibrary,
+                        onToggleFavorite = ::toggleFavorite,
                         onScanLibrary = {
                             if (hasAudioPermission) scanAudioLibrary() else audioPermissionLauncher.launch(audioPermission)
                         },
