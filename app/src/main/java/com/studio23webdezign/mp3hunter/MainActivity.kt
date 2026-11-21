@@ -1,6 +1,7 @@
 package com.studio23webdezign.mp3hunter
 
 import android.net.Uri
+import android.content.ComponentName
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -30,7 +31,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
-import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.session.MediaController
+import androidx.media3.session.SessionToken
+import androidx.core.content.ContextCompat
+import com.studio23webdezign.mp3hunter.playback.VibePlaybackService
 import com.studio23webdezign.mp3hunter.ui.HomeScreen
 import com.studio23webdezign.mp3hunter.ui.DorkSearchPanel
 import com.studio23webdezign.mp3hunter.ui.LibraryScreen
@@ -56,7 +60,38 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun DorkHunterApp() {
     val context = androidx.compose.ui.platform.LocalContext.current
-    val player = remember { ExoPlayer.Builder(context).build() }
+    var player by remember { mutableStateOf<MediaController?>(null) }
+    DisposableEffect(context) {
+        val token = SessionToken(context, ComponentName(context, VibePlaybackService::class.java))
+        val controllerFuture = MediaController.Builder(context, token).buildAsync()
+        controllerFuture.addListener(
+            { runCatching { player = controllerFuture.get() } },
+            ContextCompat.getMainExecutor(context)
+        )
+        onDispose {
+            MediaController.releaseFuture(controllerFuture)
+            player = null
+        }
+    }
+    val connectedPlayer = player
+    if (connectedPlayer == null) {
+        VibeTheme {
+            Surface(Modifier.fillMaxSize(), color = VibePalette.Obsidian) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        CircularProgressIndicator(color = VibePalette.Ice)
+                        Text("CONNECTING AUDIO ENGINE", color = VibePalette.Titanium, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.5.sp)
+                    }
+                }
+            }
+        }
+        return
+    }
+    DorkHunterContent(connectedPlayer)
+}
+
+@Composable
+private fun DorkHunterContent(player: MediaController) {
     var selectedTab by remember { mutableStateOf(AppTab.HOME) }
     var currentTitle by remember { mutableStateOf("Nothing playing") }
     var isPlaying by remember { mutableStateOf(false) }
@@ -77,10 +112,7 @@ private fun DorkHunterApp() {
             }
         }
         player.addListener(listener)
-        onDispose {
-            player.removeListener(listener)
-            player.release()
-        }
+        onDispose { player.removeListener(listener) }
     }
 
     val openMedia = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->

@@ -25,7 +25,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
-import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.common.Player
+import androidx.media3.common.PlaybackParameters
 import androidx.media3.ui.PlayerView
 import com.studio23webdezign.mp3hunter.ui.theme.VibePalette
 import kotlinx.coroutines.delay
@@ -37,7 +38,7 @@ private val Hairline = VibePalette.Hairline
 
 @Composable
 fun Mp3PlayerScreen(
-    player: ExoPlayer,
+    player: Player,
     currentTitle: String,
     isVideo: Boolean = false,
     onVideoChange: (Boolean) -> Unit = {},
@@ -167,7 +168,7 @@ fun Mp3PlayerScreen(
                     listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f).forEach { speed ->
                         DropdownMenuItem(
                             text = { Text("${speed}×", color = if (speed == playbackSpeed) Accent else VibePalette.Pearl) },
-                            onClick = { playbackSpeed = speed; player.setPlaybackSpeed(speed); speedMenuExpanded = false }
+                            onClick = { playbackSpeed = speed; player.setPlaybackParameters(PlaybackParameters(speed)); speedMenuExpanded = false }
                         )
                     }
                 }
