@@ -91,7 +91,8 @@ private fun DorkHunterApp() {
         }
     }
 
-    VibeTheme {\n        Surface(modifier = Modifier.fillMaxSize(), color = Night) {
+    VibeTheme {
+        Surface(modifier = Modifier.fillMaxSize(), color = Night) {
             Column(
                 modifier = Modifier.fillMaxSize().background(
                     Brush.verticalGradient(listOf(Color(0xFF142438), Night, Night))
