@@ -9,6 +9,7 @@ import android.os.Build
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import com.studio23webdezign.mp3hunter.data.LocalAudioTrack
 import com.studio23webdezign.mp3hunter.data.MediaStoreAudioLibrary
@@ -117,6 +118,14 @@ private fun DorkHunterContent(player: MediaController) {
     var isPlaying by remember { mutableStateOf(false) }
     var hasMedia by remember { mutableStateOf(false) }
     var isVideo by remember { mutableStateOf(false) }
+    var sleepTimerMinutes by remember { mutableIntStateOf(0) }
+    LaunchedEffect(sleepTimerMinutes) {
+        if (sleepTimerMinutes > 0) {
+            delay(sleepTimerMinutes * 60_000L)
+            player.pause()
+            sleepTimerMinutes = 0
+        }
+    }
     val audioPermission = if (Build.VERSION.SDK_INT >= 33) Manifest.permission.READ_MEDIA_AUDIO else Manifest.permission.READ_EXTERNAL_STORAGE
     var hasAudioPermission by remember {
         mutableStateOf(ContextCompat.checkSelfPermission(context, audioPermission) == PackageManager.PERMISSION_GRANTED)
@@ -266,6 +275,8 @@ private fun DorkHunterContent(player: MediaController) {
                         isVideo = isVideo,
                         onVideoChange = { isVideo = it },
                         onTitleChange = { currentTitle = it },
+                        sleepTimerMinutes = sleepTimerMinutes,
+                        onSleepTimerMinutesChange = { sleepTimerMinutes = it },
                         modifier = Modifier.weight(1f).padding(horizontal = 18.dp)
                     )
                     AppTab.LIBRARY -> LibraryScreen(

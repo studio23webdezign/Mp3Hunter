@@ -56,6 +56,8 @@ fun Mp3PlayerScreen(
     isVideo: Boolean = false,
     onVideoChange: (Boolean) -> Unit = {},
     onTitleChange: (String) -> Unit,
+    sleepTimerMinutes: Int,
+    onSleepTimerMinutesChange: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var url by remember { mutableStateOf("") }
@@ -67,7 +69,6 @@ fun Mp3PlayerScreen(
     var speedMenuExpanded by remember { mutableStateOf(false) }
     var shuffleEnabled by remember { mutableStateOf(player.shuffleModeEnabled) }
     var repeatMode by remember { mutableIntStateOf(player.repeatMode) }
-    var sleepTimerMinutes by remember { mutableIntStateOf(0) }
     var sleepTimerExpanded by remember { mutableStateOf(false) }
 
     DisposableEffect(player) {
@@ -86,14 +87,6 @@ fun Mp3PlayerScreen(
         }
         player.addListener(listener)
         onDispose { player.removeListener(listener) }
-    }
-
-    LaunchedEffect(player, sleepTimerMinutes) {
-        if (sleepTimerMinutes > 0) {
-            delay(sleepTimerMinutes * 60_000L)
-            player.pause()
-            sleepTimerMinutes = 0
-        }
     }
 
     LaunchedEffect(player, isPlaying) {
@@ -240,12 +233,12 @@ fun Mp3PlayerScreen(
                     listOf(15, 30, 45, 60).forEach { minutes ->
                         DropdownMenuItem(
                             text = { Text("${minutes} minutes", color = VibePalette.Pearl) },
-                            onClick = { sleepTimerMinutes = minutes; sleepTimerExpanded = false }
+                            onClick = { onSleepTimerMinutesChange(minutes); sleepTimerExpanded = false }
                         )
                     }
                     DropdownMenuItem(
                         text = { Text("Turn timer off", color = SecondaryText) },
-                        onClick = { sleepTimerMinutes = 0; sleepTimerExpanded = false }
+                        onClick = { onSleepTimerMinutesChange(0); sleepTimerExpanded = false }
                     )
                 }
             }
