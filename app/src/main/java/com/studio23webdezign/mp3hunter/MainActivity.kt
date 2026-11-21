@@ -132,6 +132,7 @@ private fun DorkHunterContent(player: MediaController) {
     }
     var audioTracks by remember { mutableStateOf(emptyList<LocalAudioTrack>()) }
     var isScanningLibrary by remember { mutableStateOf(false) }
+    var libraryError by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     fun toggleFavorite(track: LocalAudioTrack) {
         scope.launch(Dispatchers.IO) {
@@ -151,16 +152,32 @@ private fun DorkHunterContent(player: MediaController) {
         }
     }
     fun scanAudioLibrary() {
-        if (!hasAudioPermission) return
+        val permissionGranted = ContextCompat.checkSelfPermission(context, audioPermission) == PackageManager.PERMISSION_GRANTED
+        hasAudioPermission = permissionGranted
+        if (!permissionGranted) {
+            libraryError = "Allow audio access to scan music stored on this device. You can also browse for an individual file."
+            return
+        }
         scope.launch {
             isScanningLibrary = true
-            audioTracks = withContext(Dispatchers.IO) { MediaStoreAudioLibrary.load(context) }
-            isScanningLibrary = false
+            libraryError = null
+            try {
+                audioTracks = withContext(Dispatchers.IO) { MediaStoreAudioLibrary.load(context) }
+                if (audioTracks.isEmpty()) libraryError = "No music files were found. Try Browse Device to open an audio or video file directly."
+            } catch (_: SecurityException) {
+                hasAudioPermission = false
+                libraryError = "Audio access was revoked. Allow access and scan again, or browse for a file."
+            } catch (exception: Exception) {
+                libraryError = exception.localizedMessage ?: "The music library could not be read. Please try again."
+            } finally {
+                isScanningLibrary = false
+            }
         }
     }
     val audioPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         hasAudioPermission = granted
         if (granted) scanAudioLibrary()
+        else libraryError = "Audio permission was not granted. Browse Device still lets you open a file without scanning the library."
     }
 
     DisposableEffect(player) {
@@ -286,6 +303,7 @@ private fun DorkHunterContent(player: MediaController) {
                         favoriteUrls = favoriteUrls.toSet(),
                         recentTracks = recentTracks,
                         isScanning = isScanningLibrary,
+                        libraryError = libraryError,
                         onToggleFavorite = ::toggleFavorite,
                         onPlayRecent = { track ->
                             val uri = track.directAudioUrl ?: track.pageUrl

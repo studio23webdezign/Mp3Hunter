@@ -341,6 +341,7 @@ fun LibraryScreen(
     favoriteUrls: Set<String>,
     recentTracks: List<SavedTrack>,
     isScanning: Boolean,
+    libraryError: String? = null,
     onToggleFavorite: (LocalAudioTrack) -> Unit,
     onPlayRecent: (SavedTrack) -> Unit,
     onScanLibrary: () -> Unit,
@@ -401,6 +402,16 @@ fun LibraryScreen(
                 OutlinedButton(onClick = onOpenPlayer, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(9.dp)) {
                     Text("OPEN IN PLAYER", color = VibePalette.Ice, style = MaterialTheme.typography.labelLarge)
                 }
+            }
+        }
+        if (libraryError != null) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = VibePalette.Graphite,
+                shape = RoundedCornerShape(8.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Hairline)
+            ) {
+                Text(libraryError, modifier = Modifier.padding(12.dp), color = VibePalette.Ice, style = MaterialTheme.typography.bodySmall)
             }
         }
         OutlinedTextField(
