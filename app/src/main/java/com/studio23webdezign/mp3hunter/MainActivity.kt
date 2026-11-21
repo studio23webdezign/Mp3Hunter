@@ -111,6 +111,7 @@ private fun DorkHunterContent(player: MediaController) {
     }
     DisposableEffect(database) { onDispose { database.close() } }
     val favoriteUrls by database.trackDao().favoriteUrls().collectAsState(initial = emptyList())
+    val recentTracks by database.trackDao().recentHistory().collectAsState(initial = emptyList())
     var selectedTab by remember { mutableStateOf(AppTab.HOME) }
     var currentTitle by remember { mutableStateOf("Nothing playing") }
     var isPlaying by remember { mutableStateOf(false) }
@@ -161,6 +162,21 @@ private fun DorkHunterContent(player: MediaController) {
                     ?: mediaItem?.localConfiguration?.uri?.lastPathSegment
                     ?: "Now playing"
                 hasMedia = mediaItem != null
+                val uri = mediaItem?.localConfiguration?.uri
+                if (uri != null) {
+                    scope.launch(Dispatchers.IO) {
+                        database.trackDao().recordSearch(
+                            SavedTrack(
+                                pageUrl = uri.toString(),
+                                title = currentTitle,
+                                artist = mediaItem.mediaMetadata.artist?.toString(),
+                                sourceName = "VIBE PLAYER",
+                                directAudioUrl = uri.toString(),
+                                isDownloadAvailable = false
+                            )
+                        )
+                    }
+                }
             }
             override fun onPlaybackStateChanged(playbackState: Int) {
                 hasMedia = player.currentMediaItem != null
@@ -256,8 +272,21 @@ private fun DorkHunterContent(player: MediaController) {
                         hasMedia = hasMedia,
                         tracks = audioTracks,
                         favoriteUrls = favoriteUrls.toSet(),
+                        recentTracks = recentTracks,
                         isScanning = isScanningLibrary,
                         onToggleFavorite = ::toggleFavorite,
+                        onPlayRecent = { track ->
+                            val uri = track.directAudioUrl ?: track.pageUrl
+                            player.setMediaItem(
+                                MediaItem.Builder().setUri(uri).setMediaMetadata(
+                                    androidx.media3.common.MediaMetadata.Builder()
+                                        .setTitle(track.title).setArtist(track.artist).build()
+                                ).build()
+                            )
+                            player.prepare()
+                            player.play()
+                            selectedTab = AppTab.PLAYER
+                        },
                         onScanLibrary = {
                             if (hasAudioPermission) scanAudioLibrary() else audioPermissionLauncher.launch(audioPermission)
                         },

@@ -53,6 +53,9 @@ interface TrackDao {
     @Query("SELECT * FROM tracks ORDER BY lastSeenAt DESC LIMIT 50")
     suspend fun history(): List<SavedTrack>
 
+    @Query("SELECT * FROM tracks WHERE sourceName = 'VIBE PLAYER' ORDER BY lastSeenAt DESC LIMIT 12")
+    fun recentHistory(): Flow<List<SavedTrack>>
+
     @Query("UPDATE tracks SET isFavorite = :favorite WHERE pageUrl = :url")
     suspend fun setFavorite(url: String, favorite: Boolean)
 }

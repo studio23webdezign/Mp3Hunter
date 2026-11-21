@@ -40,6 +40,7 @@ import androidx.media3.common.PlaybackParameters
 import androidx.media3.ui.PlayerView
 import com.studio23webdezign.mp3hunter.ui.theme.VibePalette
 import com.studio23webdezign.mp3hunter.data.LocalAudioTrack
+import com.studio23webdezign.mp3hunter.data.SavedTrack
 import kotlinx.coroutines.delay
 
 private val Accent = VibePalette.Champagne
@@ -339,8 +340,10 @@ fun LibraryScreen(
     hasMedia: Boolean,
     tracks: List<LocalAudioTrack>,
     favoriteUrls: Set<String>,
+    recentTracks: List<SavedTrack>,
     isScanning: Boolean,
     onToggleFavorite: (LocalAudioTrack) -> Unit,
+    onPlayRecent: (SavedTrack) -> Unit,
     onScanLibrary: () -> Unit,
     onPlayTrack: (Int) -> Unit,
     onChooseAudio: () -> Unit,
@@ -434,6 +437,28 @@ fun LibraryScreen(
                             )
                         }
                         Text(formatTime(track.durationMs), color = SecondaryText, style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+            }
+        }
+        if (recentTracks.isNotEmpty()) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("RECENTLY PLAYED", color = SecondaryText, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.3.sp)
+                recentTracks.take(6).forEach { track ->
+                    Surface(
+                        onClick = { onPlayRecent(track) },
+                        modifier = Modifier.fillMaxWidth(),
+                        color = VibePalette.Carbon,
+                        shape = RoundedCornerShape(8.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Hairline)
+                    ) {
+                        Row(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.PlayArrow, contentDescription = null, tint = VibePalette.Ice)
+                            Column(Modifier.weight(1f).padding(start = 10.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text(track.title, color = VibePalette.Pearl, style = MaterialTheme.typography.bodySmall, maxLines = 1)
+                                Text(track.artist.orEmpty().ifBlank { "Recently played" }, color = SecondaryText, style = MaterialTheme.typography.labelSmall, maxLines = 1)
+                            }
+                        }
                     }
                 }
             }
