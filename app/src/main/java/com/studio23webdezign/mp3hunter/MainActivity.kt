@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -103,11 +104,11 @@ private fun DorkHunterApp() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Surface(modifier = Modifier.size(42.dp), shape = RoundedCornerShape(14.dp), color = Lime) {
-                        Icon(Icons.Default.Search, contentDescription = null, tint = Night, modifier = Modifier.padding(10.dp))
+                        Icon(Icons.Default.Headphones, contentDescription = "VIBE PLAYER", tint = Night, modifier = Modifier.padding(10.dp))
                     }
                     Column(Modifier.weight(1f).padding(start = 11.dp)) {
-                        Text("VIBE PLAYER", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
-                        Text("SEARCH  •  LISTEN  •  WATCH", color = TextMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                        Text("VIBE", color = VibePalette.Pearl, fontSize = 21.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 2.2.sp)
+                        Text("YOUR SOUND. YOUR SPACE.", color = TextMuted, fontSize = 9.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.2.sp)
                     }
                     Surface(shape = CircleShape, color = VibePalette.Graphite) {
                         Row(Modifier.padding(horizontal = 10.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
