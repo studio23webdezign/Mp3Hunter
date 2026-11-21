@@ -162,14 +162,15 @@ private fun DorkHunterContent(player: MediaController) {
                     ?: mediaItem?.localConfiguration?.uri?.lastPathSegment
                     ?: "Now playing"
                 hasMedia = mediaItem != null
-                val uri = mediaItem?.localConfiguration?.uri
-                if (uri != null) {
+                val transitionedItem = mediaItem
+                val uri = transitionedItem?.localConfiguration?.uri
+                if (transitionedItem != null && uri != null) {
                     scope.launch(Dispatchers.IO) {
                         database.trackDao().recordSearch(
                             SavedTrack(
                                 pageUrl = uri.toString(),
                                 title = currentTitle,
-                                artist = mediaItem.mediaMetadata.artist?.toString(),
+                                artist = transitionedItem.mediaMetadata.artist?.toString(),
                                 sourceName = "VIBE PLAYER",
                                 directAudioUrl = uri.toString(),
                                 isDownloadAvailable = false
