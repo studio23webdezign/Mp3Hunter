@@ -3,6 +3,15 @@ package com.studio23webdezign.mp3hunter
 import android.net.Uri
 import android.content.ComponentName
 import android.os.Bundle
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import com.studio23webdezign.mp3hunter.data.LocalAudioTrack
+import com.studio23webdezign.mp3hunter.data.MediaStoreAudioLibrary
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -98,6 +107,25 @@ private fun DorkHunterContent(player: MediaController) {
     var isPlaying by remember { mutableStateOf(false) }
     var hasMedia by remember { mutableStateOf(false) }
     var isVideo by remember { mutableStateOf(false) }
+    val audioPermission = if (Build.VERSION.SDK_INT >= 33) Manifest.permission.READ_MEDIA_AUDIO else Manifest.permission.READ_EXTERNAL_STORAGE
+    var hasAudioPermission by remember {
+        mutableStateOf(ContextCompat.checkSelfPermission(context, audioPermission) == PackageManager.PERMISSION_GRANTED)
+    }
+    var audioTracks by remember { mutableStateOf(emptyList<LocalAudioTrack>()) }
+    var isScanningLibrary by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    fun scanAudioLibrary() {
+        if (!hasAudioPermission) return
+        scope.launch {
+            isScanningLibrary = true
+            audioTracks = withContext(Dispatchers.IO) { MediaStoreAudioLibrary.load(context) }
+            isScanningLibrary = false
+        }
+    }
+    val audioPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        hasAudioPermission = granted
+        if (granted) scanAudioLibrary()
+    }
 
     DisposableEffect(player) {
         val listener = object : Player.Listener {
@@ -200,6 +228,26 @@ private fun DorkHunterContent(player: MediaController) {
                     AppTab.LIBRARY -> LibraryScreen(
                         currentTitle = currentTitle,
                         hasMedia = hasMedia,
+                        tracks = audioTracks,
+                        isScanning = isScanningLibrary,
+                        onScanLibrary = {
+                            if (hasAudioPermission) scanAudioLibrary() else audioPermissionLauncher.launch(audioPermission)
+                        },
+                        onPlayTrack = { index ->
+                            val items = audioTracks.map { track ->
+                                MediaItem.Builder().setUri(track.uri).setMediaMetadata(
+                                    androidx.media3.common.MediaMetadata.Builder()
+                                        .setTitle(track.title).setArtist(track.artist).setAlbumTitle(track.album).build()
+                                ).build()
+                            }
+                            if (items.isNotEmpty()) {
+                                player.setMediaItems(items, index, 0L)
+                                player.prepare()
+                                player.play()
+                                isVideo = false
+                                selectedTab = AppTab.PLAYER
+                            }
+                        },
                         onChooseAudio = { openMedia.launch(arrayOf("audio/*", "video/*")) },
                         onOpenPlayer = { selectedTab = AppTab.PLAYER },
                         modifier = Modifier.weight(1f).padding(horizontal = 18.dp)

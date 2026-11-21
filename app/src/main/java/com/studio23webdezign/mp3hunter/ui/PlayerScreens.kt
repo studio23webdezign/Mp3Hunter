@@ -11,6 +11,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,6 +30,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.ui.PlayerView
 import com.studio23webdezign.mp3hunter.ui.theme.VibePalette
+import com.studio23webdezign.mp3hunter.data.LocalAudioTrack
 import kotlinx.coroutines.delay
 
 private val Accent = VibePalette.Champagne
@@ -244,6 +247,10 @@ private val fiftyBars = listOf(0.18f,0.26f,0.42f,0.62f,0.38f,0.72f,0.9f,0.54f,0.
 fun LibraryScreen(
     currentTitle: String,
     hasMedia: Boolean,
+    tracks: List<LocalAudioTrack>,
+    isScanning: Boolean,
+    onScanLibrary: () -> Unit,
+    onPlayTrack: (Int) -> Unit,
     onChooseAudio: () -> Unit,
     onOpenPlayer: () -> Unit,
     modifier: Modifier = Modifier
@@ -262,6 +269,16 @@ fun LibraryScreen(
             Text(if (hasMedia) "CURRENTLY SELECTED" else "YOUR COLLECTION IS READY", color = Accent, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.3.sp)
             Text(if (hasMedia) currentTitle else "Add your first media file", color = VibePalette.Pearl, style = MaterialTheme.typography.titleLarge)
             Text("Audio and video remain on your device. VIBE does not upload your local files.", color = SecondaryText, style = MaterialTheme.typography.bodyMedium)
+            OutlinedButton(
+                onClick = onScanLibrary,
+                modifier = Modifier.fillMaxWidth().height(46.dp),
+                shape = RoundedCornerShape(9.dp),
+                enabled = !isScanning
+            ) {
+                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(if (isScanning) "SCANNING DEVICE…" else "SCAN MUSIC LIBRARY", style = MaterialTheme.typography.labelLarge)
+            }
             Button(
                 onClick = onChooseAudio,
                 modifier = Modifier.fillMaxWidth().height(48.dp),
@@ -271,6 +288,32 @@ fun LibraryScreen(
             if (hasMedia) {
                 OutlinedButton(onClick = onOpenPlayer, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(9.dp)) {
                     Text("OPEN IN PLAYER", color = VibePalette.Ice, style = MaterialTheme.typography.labelLarge)
+                }
+            }
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text("ON THIS DEVICE", color = SecondaryText, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.3.sp)
+            Text("${tracks.size} TRACKS", color = VibePalette.Ice, style = MaterialTheme.typography.labelSmall)
+        }
+        if (tracks.isEmpty()) {
+            Text("Scan your music library to find audio stored on this device.", color = SecondaryText, style = MaterialTheme.typography.bodySmall)
+        } else {
+            tracks.take(80).forEachIndexed { index, track ->
+                Surface(
+                    onClick = { onPlayTrack(index) },
+                    modifier = Modifier.fillMaxWidth(),
+                    color = VibePalette.Carbon,
+                    shape = RoundedCornerShape(9.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Hairline)
+                ) {
+                    Row(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.MusicNote, contentDescription = null, tint = VibePalette.Ice, modifier = Modifier.size(20.dp))
+                        Column(Modifier.weight(1f).padding(horizontal = 10.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(track.title, color = VibePalette.Pearl, style = MaterialTheme.typography.bodyMedium, maxLines = 1)
+                            Text(listOf(track.artist, track.album).filter { it.isNotBlank() }.joinToString(" · ").ifBlank { "Unknown artist" }, color = SecondaryText, style = MaterialTheme.typography.bodySmall, maxLines = 1)
+                        }
+                        Text(formatTime(track.durationMs), color = SecondaryText, style = MaterialTheme.typography.labelSmall)
+                    }
                 }
             }
         }
