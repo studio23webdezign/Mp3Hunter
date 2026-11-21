@@ -310,7 +310,14 @@ fun LibraryScreen(
     onChooseAudio: () -> Unit,
     onOpenPlayer: () -> Unit,
     modifier: Modifier = Modifier
-) {
+ ) {
+    var libraryQuery by remember { mutableStateOf("") }
+    var favoritesOnly by remember { mutableStateOf(false) }
+    val visibleTracks = tracks.mapIndexed { index, track -> index to track }.filter { (index, track) ->
+        val matchesQuery = libraryQuery.isBlank() || listOf(track.title, track.artist, track.album).any { it.contains(libraryQuery, ignoreCase = true) }
+        val matchesFavorite = !favoritesOnly || track.uri.toString() in favoriteUrls
+        matchesQuery && matchesFavorite
+    }
     Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top = 12.dp, bottom = 20.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text("COLLECTION / 03", color = Accent, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.7.sp)
@@ -347,14 +354,29 @@ fun LibraryScreen(
                 }
             }
         }
+        OutlinedTextField(
+            value = libraryQuery,
+            onValueChange = { libraryQuery = it },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            placeholder = { Text("Filter tracks, artists or albums") },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            shape = RoundedCornerShape(9.dp)
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip(selected = !favoritesOnly, onClick = { favoritesOnly = false }, label = { Text("ALL TRACKS") })
+            FilterChip(selected = favoritesOnly, onClick = { favoritesOnly = true }, label = { Text("FAVOURITES") })
+        }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text("ON THIS DEVICE", color = SecondaryText, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.3.sp)
-            Text("${tracks.size} TRACKS  ·  ${favoriteUrls.size} FAVOURITES", color = VibePalette.Ice, style = MaterialTheme.typography.labelSmall)
+            Text(if (favoritesOnly) "YOUR FAVOURITES" else "ON THIS DEVICE", color = SecondaryText, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.3.sp)
+            Text("${visibleTracks.size} SHOWN  ·  ${favoriteUrls.size} FAVOURITES", color = VibePalette.Ice, style = MaterialTheme.typography.labelSmall)
         }
         if (tracks.isEmpty()) {
             Text("Scan your music library to find audio stored on this device.", color = SecondaryText, style = MaterialTheme.typography.bodySmall)
+        } else if (visibleTracks.isEmpty()) {
+            Text(if (favoritesOnly) "No favourites yet. Tap the heart beside a track to save it." else "No tracks match that filter.", color = SecondaryText, style = MaterialTheme.typography.bodySmall)
         } else {
-            tracks.take(80).forEachIndexed { index, track ->
+            visibleTracks.take(80).forEach { (index, track) ->
                 Surface(
                     onClick = { onPlayTrack(index) },
                     modifier = Modifier.fillMaxWidth(),
