@@ -48,6 +48,8 @@ fun Mp3PlayerScreen(
     var duration by remember { mutableLongStateOf(0L) }
     var position by remember { mutableLongStateOf(0L) }
     var error by remember { mutableStateOf<String?>(null) }
+    var playbackSpeed by remember { mutableFloatStateOf(1f) }
+    var speedMenuExpanded by remember { mutableStateOf(false) }
 
     DisposableEffect(player) {
         val listener = object : Player.Listener {
@@ -137,6 +139,38 @@ fun Mp3PlayerScreen(
                     }
                     IconButton(onClick = { player.seekTo((player.currentPosition + 15000).coerceAtMost(duration)) }, enabled = player.currentMediaItem != null) {
                         Text("+15", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+
+                Box {
+                    OutlinedButton(
+                        onClick = { speedMenuExpanded = true },
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = PlayerLime),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, VibePalette.Graphite)
+                    ) {
+                        Text("SPEED  ${playbackSpeed}x", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    }
+                    DropdownMenu(
+                        expanded = speedMenuExpanded,
+                        onDismissRequest = { speedMenuExpanded = false },
+                        containerColor = PlayerCard
+                    ) {
+                        listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f).forEach { speed ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        "${speed}x${if (speed == playbackSpeed) "  ✓" else ""}",
+                                        color = if (speed == playbackSpeed) PlayerLime else VibePalette.Pearl
+                                    )
+                                },
+                                onClick = {
+                                    playbackSpeed = speed
+                                    player.setPlaybackSpeed(speed)
+                                    speedMenuExpanded = false
+                                }
+                            )
+                        }
                     }
                 }
             }
