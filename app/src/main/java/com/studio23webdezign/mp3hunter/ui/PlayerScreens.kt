@@ -67,6 +67,7 @@ fun Mp3PlayerScreen(
         }
     }
 
+    val activePlayer = player
     Column(modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Text("MUSIC PLAYER", color = PlayerLime, fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 1.4.sp)
         Text("Play a direct MP3 link or audio saved on your phone.", color = PlayerMuted, fontSize = 12.sp)
@@ -80,12 +81,12 @@ fun Mp3PlayerScreen(
                     AndroidView(
                         factory = { context ->
                             PlayerView(context).apply {
-                                player = player
+                                this.player = activePlayer
                                 useController = false
                                 setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
                             }
                         },
-                        update = { view -> view.player = player },
+                        update = { view -> view.player = activePlayer },
                         modifier = Modifier.fillMaxWidth().height(220.dp)
                             .clip(RoundedCornerShape(16.dp))
                     )
