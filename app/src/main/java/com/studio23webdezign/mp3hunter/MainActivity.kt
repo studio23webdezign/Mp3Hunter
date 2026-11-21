@@ -295,7 +295,7 @@ private fun DorkHunterContent(player: MediaController) {
                             val items = audioTracks.map { track ->
                                 MediaItem.Builder().setUri(track.uri).setMediaMetadata(
                                     androidx.media3.common.MediaMetadata.Builder()
-                                        .setTitle(track.title).setArtist(track.artist).setAlbumTitle(track.album).build()
+                                        .setTitle(track.title).setArtist(track.artist).setAlbumTitle(track.album).setArtworkUri(track.albumArtUri).build()
                                 ).build()
                             }
                             if (items.isNotEmpty()) {

@@ -8,6 +8,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import coil.compose.AsyncImage
+import coil.compose.AsyncImage
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -143,10 +144,15 @@ fun Mp3PlayerScreen(
                         .background(Brush.linearGradient(listOf(Color(0xFF26384A), Color(0xFF172635), Color(0xFF101923)))),
                     contentAlignment = Alignment.Center
                 ) {
-                    WaveformMark(Modifier.fillMaxWidth().height(110.dp).padding(horizontal = 26.dp))
-                    Column(Modifier.align(Alignment.BottomStart).padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text("VIBE SOUND SYSTEM", color = Color(0xFFB9DFFF), style = MaterialTheme.typography.labelSmall, letterSpacing = 1.6.sp)
-                        Text("PURE FREQUENCY.", color = Color.White, style = MaterialTheme.typography.titleLarge, letterSpacing = 0.6.sp)
+                    val artwork = player.mediaMetadata.artworkUri
+                    if (artwork != null) {
+                        AsyncImage(model = artwork, contentDescription = "Current track artwork", modifier = Modifier.fillMaxSize())
+                    } else {
+                        WaveformMark(Modifier.fillMaxWidth().height(110.dp).padding(horizontal = 26.dp))
+                        Column(Modifier.align(Alignment.BottomStart).padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text("VIBE SOUND SYSTEM", color = Color(0xFFB9DFFF), style = MaterialTheme.typography.labelSmall, letterSpacing = 1.6.sp)
+                            Text("PURE FREQUENCY.", color = Color.White, style = MaterialTheme.typography.titleLarge, letterSpacing = 0.6.sp)
+                        }
                     }
                     Text("01", color = Color(0xFFB9DFFF).copy(alpha = 0.7f), modifier = Modifier.align(Alignment.TopEnd).padding(15.dp), style = MaterialTheme.typography.labelSmall)
                 }
