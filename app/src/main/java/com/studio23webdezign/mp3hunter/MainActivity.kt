@@ -1,374 +1,189 @@
 package com.studio23webdezign.mp3hunter
 
-import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.room.Room
-import com.studio23webdezign.mp3hunter.data.ArtistCatalog
-import com.studio23webdezign.mp3hunter.data.SavedTrack
-import com.studio23webdezign.mp3hunter.data.TrackDatabase
-import com.studio23webdezign.mp3hunter.recognition.ArtistMatcher
-import com.studio23webdezign.mp3hunter.search.AudioDownloadManager
-import com.studio23webdezign.mp3hunter.search.MultiSourceMusicSearchProvider
-import com.studio23webdezign.mp3hunter.search.OpenverseProvider
-import com.studio23webdezign.mp3hunter.search.WebDiscoveryProvider
-import com.studio23webdezign.mp3hunter.search.MusicResult
-import com.studio23webdezign.mp3hunter.search.SearchPlanner
-import com.studio23webdezign.mp3hunter.search.TrackPlayback
 import com.studio23webdezign.mp3hunter.ui.DorkSearchPanel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
-private val Ink = Color(0xFF10131B)
-private val Panel = Color(0xFF1B202B)
-private val Accent = Color(0xFFB9F45A)
-private val Muted = Color(0xFF9AA4B2)
+private val Night = Color(0xFF090E17)
+private val SurfaceDark = Color(0xFF121C2A)
+private val Lime = Color(0xFFC7F36B)
+private val TextMuted = Color(0xFF9BA9BA)
+private val Cyan = Color(0xFF69D9D0)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { Mp3HunterApp(applicationContext) }
+        setContent { DorkHunterApp() }
     }
 }
 
 @Composable
-private fun Mp3HunterApp(context: Context) {
-    var query by remember { mutableStateOf("") }
-    var results by remember { mutableStateOf<List<MusicResult>>(emptyList()) }
-    var favorites by remember { mutableStateOf<List<SavedTrack>>(emptyList()) }
-    var history by remember { mutableStateOf<List<SavedTrack>>(emptyList()) }
-    var suggestions by remember { mutableStateOf<List<String>>(emptyList()) }
-    var recognized by remember { mutableStateOf<String?>(null) }
-    var message by remember { mutableStateOf<String?>(null) }
-    var loading by remember { mutableStateOf(false) }
-    var page by remember { mutableIntStateOf(1) }
-    var canLoadMore by remember { mutableStateOf(false) }
-    var selectedTab by remember { mutableStateOf("SEARCH") }
-    val scope = rememberCoroutineScope()
-    val matcher = remember { ArtistMatcher(ArtistCatalog.artists) }
-    val provider = remember { MultiSourceMusicSearchProvider(listOf(WebDiscoveryProvider(), OpenverseProvider())) }
-    val database = remember { Room.databaseBuilder(context, TrackDatabase::class.java, "mp3-hunter.db").build() }
-    val dao = remember { database.trackDao() }
-    val playback = remember { TrackPlayback(context) }
-    val downloader = remember { AudioDownloadManager(context) }
-
-    DisposableEffect(Unit) {
-        onDispose { playback.release(); database.close() }
-    }
-
-    fun loadLibrary() {
-        scope.launch {
-            favorites = withContext(Dispatchers.IO) { dao.favorites() }
-            history = withContext(Dispatchers.IO) { dao.history() }
-        }
-    }
-
-    MaterialTheme(colorScheme = darkColorScheme(
-        background = Ink, surface = Panel, primary = Accent,
-        onBackground = Color.White, onSurface = Color.White
-    )) {
-        Surface(Modifier.fillMaxSize(), color = Ink) {
-            Column(Modifier.fillMaxSize().padding(horizontal = 18.dp)) {
+private fun DorkHunterApp() {
+    MaterialTheme(
+        colorScheme = darkColorScheme(
+            primary = Lime,
+            secondary = Cyan,
+            background = Night,
+            surface = SurfaceDark,
+            surfaceVariant = Color(0xFF1B293A),
+            onPrimary = Night,
+            onBackground = Color(0xFFF5F7FA),
+            onSurface = Color(0xFFF5F7FA),
+            onSurfaceVariant = Color(0xFFD2DBE6)
+        )
+    ) {
+        Surface(modifier = Modifier.fillMaxSize(), color = Night) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(Color(0xFF142438), Night, Night)
+                        )
+                    )
+                    .padding(horizontal = 18.dp)
+            ) {
                 Row(
-                    Modifier.fillMaxWidth().padding(top = 26.dp, bottom = 18.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 22.dp, bottom = 20.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(Modifier.weight(1f)) {
-                        Text("MP3 HUNTER", color = Accent, fontSize = 25.sp, fontWeight = FontWeight.Black)
-                        Text("Discover music. Find direct MP3 downloads.", color = Muted, fontSize = 12.sp)
-                    }
-                    Surface(color = Panel, shape = RoundedCornerShape(12.dp)) {
-                        Text("BETA", color = Accent, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp), fontWeight = FontWeight.Bold)
-                    }
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                    listOf("SEARCH", "DORKS", "FAVORITES", "HISTORY").forEach { tab ->
-                        FilterChip(
-                            selected = selectedTab == tab,
-                            onClick = { selectedTab = tab; if (tab == "FAVORITES" || tab == "HISTORY") loadLibrary() },
-                            label = { Text(tab, fontSize = 11.sp) },
-                            modifier = Modifier.weight(1f)
+                    Surface(
+                        modifier = Modifier.size(46.dp),
+                        shape = RoundedCornerShape(15.dp),
+                        color = Lime
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Dork search",
+                            tint = Night,
+                            modifier = Modifier.padding(11.dp)
                         )
+                    }
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(start = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        Text(
+                            "DORK HUNTER",
+                            color = Color.White,
+                            fontSize = 21.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 1.1.sp
+                        )
+                        Text(
+                            "ADVANCED INDEX SEARCH",
+                            color = TextMuted,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.5.sp
+                        )
+                    }
+                    Surface(
+                        shape = CircleShape,
+                        color = Color(0xFF243B2A)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 11.dp, vertical = 7.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(5.dp)
+                        ) {
+                            Icon(Icons.Default.Bolt, contentDescription = null, tint = Lime, modifier = Modifier.size(14.dp))
+                            Text("READY", color = Lime, fontSize = 9.sp, fontWeight = FontWeight.ExtraBold)
+                        }
                     }
                 }
 
-                when (selectedTab) {
-                    "SEARCH" -> {
-                        OutlinedTextField(
-                            value = query,
-                            onValueChange = {
-                                query = it
-                                recognized = null
-                                suggestions = matcher.suggestions(it).map { match -> match.artist.canonicalName }
-                            },
-                            modifier = Modifier.fillMaxWidth().padding(top = 14.dp),
-                            placeholder = { Text("Artist, track, album…", color = Muted) },
-                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search", tint = Accent) },
-                            singleLine = true,
-                            shape = RoundedCornerShape(16.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Accent, unfocusedBorderColor = Panel,
-                                focusedTextColor = Color.White, unfocusedTextColor = Color.White
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(22.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceDark)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                Brush.horizontalGradient(
+                                    listOf(Color(0xFF1A3040), Color(0xFF172333), Color(0xFF182337))
+                                )
                             )
+                            .padding(18.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                            Icon(Icons.Default.Language, contentDescription = null, tint = Cyan, modifier = Modifier.size(15.dp))
+                            Text("SEARCH THE OPEN WEB", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.3.sp)
+                        }
+                        Text(
+                            "Find what search engines have indexed.",
+                            color = Color.White,
+                            fontSize = 20.sp,
+                            lineHeight = 25.sp,
+                            fontWeight = FontWeight.Bold
                         )
-                        if (suggestions.isNotEmpty() && recognized == null) {
-                            Text("POSSIBLE ARTIST SPELLINGS", color = Muted, fontSize = 10.sp, modifier = Modifier.padding(top = 8.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                suggestions.take(3).forEach { name ->
-                                    AssistChip(onClick = { query = name; suggestions = emptyList() }, label = { Text(name, fontSize = 10.sp) })
-                                }
-                            }
-                        }
-                        Button(
-                            onClick = {
-                                if (query.isBlank()) {
-                                    message = "Enter an artist, track or album to search."
-                                } else {
-                                    loading = true
-                                    page = 1
-                                    canLoadMore = false
-                                    message = null
-                                    results = emptyList()
-                                    val match = matcher.match(query)
-                                    recognized = match?.artist?.canonicalName
-                                    val plan = SearchPlanner.create(query, recognized, match?.artist?.aliases.orEmpty(), page = 1)
-                                    scope.launch {
-                                        try {
-                                            val found = provider.search(plan)
-                                            results = found
-                                            canLoadMore = found.isNotEmpty()
-                                            if (found.isEmpty()) message = "No matching audio records were found in the public web search and audio sources. Try a track title or a broader search."
-                                            found.forEach { track ->
-                                                withContext(Dispatchers.IO) {
-                                                    dao.recordSearch(SavedTrack(
-                                                        pageUrl = track.pageUrl,
-                                                        title = track.title,
-                                                        artist = track.artist,
-                                                        sourceName = track.sourceName,
-                                                        directAudioUrl = track.directAudioUrl,
-                                                        isDownloadAvailable = track.isDownloadAvailable,
-                                                        lastSeenAt = System.currentTimeMillis()
-                                                    ))
-                                                }
-                                            }
-                                            loadLibrary()
-                                        } catch (e: Exception) {
-                                            message = "Search could not complete: ${e.localizedMessage ?: "check your connection"}"
-                                        } finally {
-                                            loading = false
-                                        }
-                                    }
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Ink)
-                        ) { Text(if (loading) "SEARCHING…" else "SEARCH THE WEB FOR MP3s", fontWeight = FontWeight.Black) }
-
-                        recognized?.let {
-                            Text("Artist recognised: $it", color = Accent, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
-                        }
-                        if (loading) LinearProgressIndicator(Modifier.fillMaxWidth().padding(top = 12.dp), color = Accent)
-                        message?.let { Text(it, color = Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 10.dp)) }
-                        if (results.isNotEmpty()) {
-                            Text("${results.size} RESULTS • SOUTH AFRICAN + INTERNATIONAL", color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 14.dp, bottom = 8.dp))
-                            LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(bottom = 28.dp)) {
-                                items(results, key = { it.pageUrl }) { result ->
-                                    val isFavorite = favorites.any { it.pageUrl == result.pageUrl }
-                                    TrackCard(
-                                        result = result,
-                                        isFavorite = isFavorite,
-                                        onFavorite = {
-                                            scope.launch {
-                                                withContext(Dispatchers.IO) {
-                                                    dao.upsert(SavedTrack(result.pageUrl, result.title, result.artist, result.sourceName, result.directAudioUrl, result.isDownloadAvailable, !isFavorite))
-                                                }
-                                                loadLibrary()
-                                            }
-                                        },
-                                        onPlay = { playback.play(result) },
-                                        onDownload = {
-                                            val id = downloader.enqueue(result)
-                                            message = if (id != null) "Download queued. Android will notify you when it finishes." else "A direct public MP3 download is not available for this result."
-                                        }
-                                    )
-                                }
-                            }
-                            if (canLoadMore && !loading) {
-                                OutlinedButton(
-                                    onClick = {
-                                        loading = true
-                                        message = null
-                                        val match = matcher.match(query)
-                                        scope.launch {
-                                            try {
-                                                val next = provider.search(
-                                                    SearchPlanner.create(
-                                                        query,
-                                                        recognized ?: match?.artist?.canonicalName,
-                                                        match?.artist?.aliases.orEmpty(),
-                                                        page = page + 1
-                                                    )
-                                                )
-                                                val merged = (results + next).distinctBy { it.directAudioUrl ?: it.pageUrl }
-                                                val addedNewResults = merged.size > results.size
-                                                results = merged
-                                                page += 1
-                                                canLoadMore = next.isNotEmpty() && addedNewResults
-                                                if (next.isEmpty()) message = "No more results in the public web search and audio sources."
-                                                next.forEach { track ->
-                                                    withContext(Dispatchers.IO) {
-                                                        dao.recordSearch(SavedTrack(
-                                                            pageUrl = track.pageUrl,
-                                                            title = track.title,
-                                                            artist = track.artist,
-                                                            sourceName = track.sourceName,
-                                                            directAudioUrl = track.directAudioUrl,
-                                                            isDownloadAvailable = track.isDownloadAvailable,
-                                                            lastSeenAt = System.currentTimeMillis()
-                                                        ))
-                                                    }
-                                                }
-                                                loadLibrary()
-                                            } catch (e: Exception) {
-                                                message = "Could not load more results: ${e.localizedMessage ?: "check your connection"}"
-                                            } finally {
-                                                loading = false
-                                            }
-                                        }
-                                    },
-                                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
-                                ) { Text("LOAD MORE RESULTS") }
-                            }
-                        } else if (!loading && message == null) {
-                            DiscoveryIntro()
-                        }
-                    }
-                    "DORKS" -> {
-                        DorkSearchPanel(modifier = Modifier.weight(1f).padding(top = 14.dp, bottom = 8.dp))
-                    }
-                    "FAVORITES" -> {
-                        Text("YOUR SAVED TRACKS", color = Muted, fontSize = 10.sp, modifier = Modifier.padding(vertical = 12.dp))
-                        LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            items(favorites, key = { it.pageUrl }) { saved ->
-                                SavedTrackCard(saved, onRemove = {
-                                    scope.launch {
-                                        withContext(Dispatchers.IO) { dao.setFavorite(saved.pageUrl, false) }
-                                        loadLibrary()
-                                    }
-                                })
-                            }
-                        }
-                    }
-                    else -> {
-                        Text("RECENT SEARCH RESULTS", color = Muted, fontSize = 10.sp, modifier = Modifier.padding(vertical = 12.dp))
-                        LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            items(history, key = { it.pageUrl }) { saved -> SavedTrackCard(saved, onRemove = null) }
-                        }
+                        Text(
+                            "Build precise Google dorks from one search. Explore file types, exact phrases, domains, exclusions and more.",
+                            color = TextMuted,
+                            fontSize = 12.sp,
+                            lineHeight = 18.sp
+                        )
                     }
                 }
-            }
-        }
-    }
-}
 
-@Composable
-private fun TrackCard(
-    result: MusicResult,
-    isFavorite: Boolean,
-    onFavorite: () -> Unit,
-    onPlay: () -> Unit,
-    onDownload: () -> Unit
-) {
-    Surface(color = Panel, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(result.title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                    Text(result.artist ?: "Artist not listed", color = Muted, fontSize = 12.sp)
+                Spacer(Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("DORK SEARCH", color = Lime, fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 1.4.sp)
+                    Text("QUERY BUILDER  •  GOOGLE", color = TextMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                 }
-                IconButton(onClick = onFavorite) {
-                    Icon(if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder, contentDescription = "Favorite", tint = Accent)
-                }
-            }
-            Text(result.sourceName, color = Muted, fontSize = 10.sp)
-            result.license?.takeIf { it.isNotBlank() }?.let { license ->
-                Text("SOURCE RIGHTS: $license", color = Muted, fontSize = 9.sp)
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (result.directAudioUrl != null) {
-                    OutlinedButton(onClick = onPlay, modifier = Modifier.weight(1f)) {
-                        Icon(Icons.Default.PlayArrow, contentDescription = null)
-                        Text("PLAY")
-                    }
-                }
-                Button(
-                    onClick = onDownload,
-                    enabled = result.canDownload,
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Ink, disabledContainerColor = Color(0xFF343A44))
-                ) { Text(if (result.canDownload) "DOWNLOAD MP3" else "NOT DOWNLOADABLE", fontSize = 10.sp) }
-            }
-        }
-    }
-}
+                Spacer(Modifier.height(8.dp))
 
-@Composable
-private fun SavedTrackCard(track: SavedTrack, onRemove: (() -> Unit)?) {
-    Surface(color = Panel, shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth()) {
-        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(track.title, color = Color.White, fontWeight = FontWeight.Bold)
-                Text(track.artist ?: track.sourceName, color = Muted, fontSize = 12.sp)
+                DorkSearchPanel(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(bottom = 10.dp)
+                )
             }
-            if (track.isDownloadAvailable) Text("MP3", color = Accent, fontSize = 10.sp)
-            onRemove?.let { TextButton(onClick = it) { Text("REMOVE") } }
-        }
-    }
-}
-
-@Composable
-private fun DiscoveryIntro() {
-    Column(Modifier.fillMaxWidth().padding(top = 22.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Text("DISCOVER BOTH WORLDS", color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            MarketCard("SOUTH AFRICAN", "Amapiano • Maskandi • Gqom • House", Modifier.weight(1f))
-            MarketCard("INTERNATIONAL", "Pop • Hip-hop • R&B • Electronic", Modifier.weight(1f))
-        }
-        Surface(color = Panel, shape = RoundedCornerShape(16.dp)) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("SMART ARTIST RECOGNITION", color = Accent, fontWeight = FontWeight.Bold)
-                Text("Try “kabza de smal”. MP3 HUNTER suggests verified artist spellings before searching.", color = Color.White, fontSize = 12.sp)
-            }
-        }
-        Text("Download buttons appear when the source exposes a direct public MP3 URL and the server confirms it is audio. Check the source's terms and rights before saving or sharing a track.", color = Muted, fontSize = 11.sp)
-    }
-}
-
-@Composable
-private fun MarketCard(title: String, subtitle: String, modifier: Modifier = Modifier) {
-    Surface(modifier = modifier.heightIn(min = 110.dp), color = Panel, shape = RoundedCornerShape(16.dp)) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(title, color = Accent, fontWeight = FontWeight.ExtraBold, fontSize = 10.sp)
-            Text(subtitle, color = Color.White, fontSize = 11.sp, lineHeight = 16.sp)
         }
     }
 }
