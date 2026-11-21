@@ -95,7 +95,7 @@ private fun DorkHunterApp() {
         Surface(modifier = Modifier.fillMaxSize(), color = Night) {
             Column(
                 modifier = Modifier.fillMaxSize().background(
-                    Brush.verticalGradient(listOf(Color(0xFF142438), Night, Night))
+                    Brush.verticalGradient(listOf(VibePalette.Carbon, Night, Night))
                 )
             ) {
                 Row(
@@ -109,7 +109,7 @@ private fun DorkHunterApp() {
                         Text("VIBE PLAYER", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
                         Text("SEARCH  •  LISTEN  •  WATCH", color = TextMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                     }
-                    Surface(shape = CircleShape, color = Color(0xFF243B2A)) {
+                    Surface(shape = CircleShape, color = VibePalette.Graphite) {
                         Row(Modifier.padding(horizontal = 10.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Bolt, contentDescription = null, tint = Lime, modifier = Modifier.size(13.dp))
                             Text("READY", color = Lime, fontSize = 9.sp, fontWeight = FontWeight.ExtraBold)
@@ -126,7 +126,7 @@ private fun DorkHunterApp() {
                         ) {
                             Column(
                                 Modifier.fillMaxWidth().background(
-                                    Brush.horizontalGradient(listOf(Color(0xFF1A3040), Color(0xFF172333), Color(0xFF182337)))
+                                    Brush.horizontalGradient(listOf(VibePalette.Graphite, VibePalette.Carbon, VibePalette.Carbon))
                                 ).padding(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
@@ -162,7 +162,7 @@ private fun DorkHunterApp() {
 
                 if (hasMedia) {
                     Surface(
-                        color = Color(0xFF172638),
+                        color = VibePalette.Carbon,
                         shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
                     ) {
                         Row(
@@ -186,27 +186,27 @@ private fun DorkHunterApp() {
                     }
                 }
 
-                NavigationBar(containerColor = Color(0xFF0D1724), contentColor = TextMuted) {
+                NavigationBar(containerColor = VibePalette.Obsidian, contentColor = TextMuted) {
                     NavigationBarItem(
                         selected = selectedTab == AppTab.SEARCH,
                         onClick = { selectedTab = AppTab.SEARCH },
                         icon = { Icon(Icons.Default.Search, contentDescription = null) },
                         label = { Text("Search", fontSize = 10.sp) },
-                        colors = NavigationBarItemDefaults.colors(selectedIconColor = Lime, selectedTextColor = Lime, indicatorColor = Color(0xFF263629))
+                        colors = NavigationBarItemDefaults.colors(selectedIconColor = Lime, selectedTextColor = Lime, indicatorColor = VibePalette.Graphite)
                     )
                     NavigationBarItem(
                         selected = selectedTab == AppTab.PLAYER,
                         onClick = { selectedTab = AppTab.PLAYER },
                         icon = { Icon(Icons.Default.PlayCircle, contentDescription = null) },
                         label = { Text("Player", fontSize = 10.sp) },
-                        colors = NavigationBarItemDefaults.colors(selectedIconColor = Lime, selectedTextColor = Lime, indicatorColor = Color(0xFF263629))
+                        colors = NavigationBarItemDefaults.colors(selectedIconColor = Lime, selectedTextColor = Lime, indicatorColor = VibePalette.Graphite)
                     )
                     NavigationBarItem(
                         selected = selectedTab == AppTab.LIBRARY,
                         onClick = { selectedTab = AppTab.LIBRARY },
                         icon = { Icon(Icons.Default.LibraryMusic, contentDescription = null) },
                         label = { Text("Library", fontSize = 10.sp) },
-                        colors = NavigationBarItemDefaults.colors(selectedIconColor = Lime, selectedTextColor = Lime, indicatorColor = Color(0xFF263629))
+                        colors = NavigationBarItemDefaults.colors(selectedIconColor = Lime, selectedTextColor = Lime, indicatorColor = VibePalette.Graphite)
                     )
                 }
             }
