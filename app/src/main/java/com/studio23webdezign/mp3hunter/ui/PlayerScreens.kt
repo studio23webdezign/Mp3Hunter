@@ -2,6 +2,8 @@ package com.studio23webdezign.mp3hunter.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
@@ -13,6 +15,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -22,6 +26,8 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import com.studio23webdezign.mp3hunter.ui.theme.VibePalette
+import com.studio23webdezign.mp3hunter.ui.theme.VibeSpacing
+import com.studio23webdezign.mp3hunter.ui.theme.VibeRadii
 import kotlinx.coroutines.delay
 
 private val PlayerLime = VibePalette.Champagne
@@ -68,12 +74,12 @@ fun Mp3PlayerScreen(
     }
 
     val activePlayer = player
-    Column(modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Text("MUSIC PLAYER", color = PlayerLime, fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 1.4.sp)
-        Text("Play a direct MP3 link or audio saved on your phone.", color = PlayerMuted, fontSize = 12.sp)
-        Card(shape = RoundedCornerShape(22.dp), colors = CardDefaults.cardColors(containerColor = PlayerCard)) {
+    Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
+        Text("NOW PLAYING", color = PlayerLime, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 2.sp)
+        Text("A focused listening space for your music and video.", color = PlayerMuted, fontSize = 12.sp)
+        Card(shape = RoundedCornerShape(VibeRadii.Hero.dp), colors = CardDefaults.cardColors(containerColor = PlayerCard)) {
             Column(
-                Modifier.fillMaxWidth().padding(20.dp),
+                Modifier.fillMaxWidth().background(Brush.verticalGradient(listOf(VibePalette.Graphite, PlayerCard))).padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
@@ -82,7 +88,7 @@ fun Mp3PlayerScreen(
                         factory = { context ->
                             PlayerView(context).apply {
                                 this.player = activePlayer
-                                useController = false
+                                useController = true
                                 setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
                             }
                         },
@@ -92,7 +98,7 @@ fun Mp3PlayerScreen(
                     )
                 } else {
                     Box(
-                        Modifier.size(190.dp).background(
+                        Modifier.fillMaxWidth().aspectRatio(1f).padding(horizontal = 12.dp).background(
                             androidx.compose.ui.graphics.Brush.linearGradient(
                                 listOf(VibePalette.Graphite, VibePalette.Raised, VibePalette.Carbon)
                             ),
@@ -103,8 +109,8 @@ fun Mp3PlayerScreen(
                         Text("V", color = PlayerLime, fontSize = 68.sp, fontWeight = FontWeight.Light)
                     }
                 }
-                Text(currentTitle, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 2)
-                Text(if (isPlaying) "NOW PLAYING" else "READY TO PLAY", color = PlayerMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                Text(currentTitle, color = VibePalette.Pearl, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(if (isPlaying) "PLAYING" else "READY TO PLAY", color = PlayerMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.6.sp)
                 Slider(
                     value = if (duration > 0) position.coerceAtMost(duration).toFloat() else 0f,
                     onValueChange = { position = it.toLong() },
@@ -136,7 +142,7 @@ fun Mp3PlayerScreen(
             }
         }
 
-        Text("PLAY FROM A LINK", color = PlayerLime, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp)
+        Text("PLAY FROM A LINK", color = PlayerLime, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.8.sp)
         OutlinedTextField(
             value = url,
             onValueChange = { url = it; error = null },
@@ -181,9 +187,9 @@ fun LibraryScreen(
     onOpenPlayer: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Text("YOUR LIBRARY", color = PlayerLime, fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 1.4.sp)
-        Text("Browse audio and video stored on your device.", color = PlayerMuted, fontSize = 12.sp)
+    Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
+        Text("YOUR COLLECTION", color = PlayerLime, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 2.sp)
+        Text("Your media stays on your device. Nothing is uploaded.", color = PlayerMuted, fontSize = 12.sp)
         Card(shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = PlayerCard)) {
             Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(if (hasMedia) "CURRENT TRACK" else "YOUR MUSIC STARTS HERE", color = PlayerLime, fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp)
