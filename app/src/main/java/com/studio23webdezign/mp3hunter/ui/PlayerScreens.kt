@@ -361,7 +361,7 @@ fun LibraryScreen(
         }
         .let { filtered ->
             when (sortMode) {
-                "ARTIST" -> filtered.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.second.artist.ifBlank { "Unknown artist" } }.thenBy(String.CASE_INSENSITIVE_ORDER) { it.second.title })
+                "ARTIST" -> filtered.sortedWith(compareBy<Pair<Int, LocalAudioTrack>> { it.second.artist.ifBlank { "Unknown artist" }.lowercase() }.thenBy { it.second.title.lowercase() })
                 "DURATION" -> filtered.sortedByDescending { it.second.durationMs }
                 "RECENT" -> filtered.reversed()
                 else -> filtered.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.second.title })
