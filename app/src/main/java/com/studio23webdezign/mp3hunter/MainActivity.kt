@@ -15,6 +15,8 @@ import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -177,7 +179,7 @@ private fun DorkHunterApp() {
                             }
                             IconButton(onClick = { if (player.isPlaying) player.pause() else player.play() }) {
                                 Icon(
-                                    imageVector = if (isPlaying) androidx.compose.material.icons.filled.Pause else androidx.compose.material.icons.filled.PlayArrow,
+                                    imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                                     contentDescription = if (isPlaying) "Pause" else "Play",
                                     tint = Lime
                                 )
