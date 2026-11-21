@@ -10,7 +10,8 @@ data class LocalAudioTrack(
     val title: String,
     val artist: String,
     val album: String,
-    val durationMs: Long
+    val durationMs: Long,
+    val albumArtUri: Uri?
 )
 
 object MediaStoreAudioLibrary {
@@ -21,7 +22,8 @@ object MediaStoreAudioLibrary {
             MediaStore.Audio.Media.TITLE,
             MediaStore.Audio.Media.ARTIST,
             MediaStore.Audio.Media.ALBUM,
-            MediaStore.Audio.Media.DURATION
+            MediaStore.Audio.Media.DURATION,
+            MediaStore.Audio.Media.ALBUM_ID
         )
         val tracks = mutableListOf<LocalAudioTrack>()
         context.contentResolver.query(
@@ -36,6 +38,7 @@ object MediaStoreAudioLibrary {
             val artistColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
             val albumColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
             val durationColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
+            val albumIdColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID)
             while (cursor.moveToNext()) {
                 val id = cursor.getLong(idColumn)
                 tracks += LocalAudioTrack(
@@ -43,7 +46,8 @@ object MediaStoreAudioLibrary {
                     title = cursor.getString(titleColumn).orEmpty().ifBlank { "Untitled track" },
                     artist = cursor.getString(artistColumn).orEmpty(),
                     album = cursor.getString(albumColumn).orEmpty(),
-                    durationMs = cursor.getLong(durationColumn)
+                    durationMs = cursor.getLong(durationColumn),
+                    albumArtUri = ContentUris.withAppendedId(MediaStore.Audio.Albums.EXTERNAL_CONTENT_URI, cursor.getLong(albumIdColumn))
                 )
             }
         }

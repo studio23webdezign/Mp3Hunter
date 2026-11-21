@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import coil.compose.AsyncImage
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -424,7 +425,20 @@ fun LibraryScreen(
                     border = androidx.compose.foundation.BorderStroke(1.dp, Hairline)
                 ) {
                     Row(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.MusicNote, contentDescription = null, tint = VibePalette.Ice, modifier = Modifier.size(20.dp))
+                        if (track.albumArtUri != null) {
+                            AsyncImage(
+                                model = track.albumArtUri,
+                                contentDescription = "Album artwork for ${track.album}",
+                                modifier = Modifier.size(48.dp).clip(RoundedCornerShape(6.dp))
+                            )
+                        } else {
+                            Box(
+                                Modifier.size(48.dp).clip(RoundedCornerShape(6.dp)).background(VibePalette.Graphite),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.MusicNote, contentDescription = null, tint = VibePalette.Ice, modifier = Modifier.size(21.dp))
+                            }
+                        }
                         Column(Modifier.weight(1f).padding(horizontal = 10.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Text(track.title, color = VibePalette.Pearl, style = MaterialTheme.typography.bodyMedium, maxLines = 1)
                             Text(listOf(track.artist, track.album).filter { it.isNotBlank() }.joinToString(" · ").ifBlank { "Unknown artist" }, color = SecondaryText, style = MaterialTheme.typography.bodySmall, maxLines = 1)
