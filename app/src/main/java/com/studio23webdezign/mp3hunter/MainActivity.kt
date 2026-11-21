@@ -31,12 +31,14 @@ import androidx.media3.exoplayer.ExoPlayer
 import com.studio23webdezign.mp3hunter.ui.DorkSearchPanel
 import com.studio23webdezign.mp3hunter.ui.LibraryScreen
 import com.studio23webdezign.mp3hunter.ui.Mp3PlayerScreen
+import com.studio23webdezign.mp3hunter.ui.theme.VibePalette
+import com.studio23webdezign.mp3hunter.ui.theme.VibeTheme
 
-private val Night = Color(0xFF090E17)
-private val SurfaceDark = Color(0xFF121C2A)
-private val Lime = Color(0xFFC7F36B)
-private val TextMuted = Color(0xFF9BA9BA)
-private val Cyan = Color(0xFF69D9D0)
+private val Night = VibePalette.Obsidian
+private val SurfaceDark = VibePalette.Carbon
+private val Lime = VibePalette.Champagne
+private val TextMuted = VibePalette.Titanium
+private val Cyan = VibePalette.Pearl
 
 private enum class AppTab(val label: String) { SEARCH("Search"), PLAYER("Player"), LIBRARY("Library") }
 
@@ -55,6 +57,7 @@ private fun DorkHunterApp() {
     var currentTitle by remember { mutableStateOf("Nothing playing") }
     var isPlaying by remember { mutableStateOf(false) }
     var hasMedia by remember { mutableStateOf(false) }
+    var isVideo by remember { mutableStateOf(false) }
 
     DisposableEffect(player) {
         val listener = object : Player.Listener {
@@ -76,9 +79,10 @@ private fun DorkHunterApp() {
         }
     }
 
-    val openAudio = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+    val openMedia = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         uri?.let {
             runCatching { context.contentResolver.takePersistableUriPermission(it, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+            isVideo = context.contentResolver.getType(it)?.startsWith("video/") == true
             player.setMediaItem(MediaItem.fromUri(it))
             player.prepare()
             player.play()
@@ -87,7 +91,7 @@ private fun DorkHunterApp() {
         }
     }
 
-    MaterialTheme(
+    VibeTheme {\n        Surface
         colorScheme = darkColorScheme(
             primary = Lime, secondary = Cyan, background = Night, surface = SurfaceDark,
             surfaceVariant = Color(0xFF1B293A), onPrimary = Night,
@@ -109,8 +113,8 @@ private fun DorkHunterApp() {
                         Icon(Icons.Default.Search, contentDescription = null, tint = Night, modifier = Modifier.padding(10.dp))
                     }
                     Column(Modifier.weight(1f).padding(start = 11.dp)) {
-                        Text("DORK HUNTER", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
-                        Text("SEARCH  •  PLAY  •  DISCOVER", color = TextMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                        Text("VIBE PLAYER", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
+                        Text("SEARCH  •  LISTEN  •  WATCH", color = TextMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                     }
                     Surface(shape = CircleShape, color = Color(0xFF243B2A)) {
                         Row(Modifier.padding(horizontal = 10.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -149,13 +153,15 @@ private fun DorkHunterApp() {
                     AppTab.PLAYER -> Mp3PlayerScreen(
                         player = player,
                         currentTitle = currentTitle,
+                        isVideo = isVideo,
+                        onVideoChange = { isVideo = it },
                         onTitleChange = { currentTitle = it },
                         modifier = Modifier.weight(1f).padding(horizontal = 18.dp)
                     )
                     AppTab.LIBRARY -> LibraryScreen(
                         currentTitle = currentTitle,
                         hasMedia = hasMedia,
-                        onChooseAudio = { openAudio.launch(arrayOf("audio/*")) },
+                        onChooseAudio = { openMedia.launch(arrayOf("audio/*", "video/*")) },
                         onOpenPlayer = { selectedTab = AppTab.PLAYER },
                         modifier = Modifier.weight(1f).padding(horizontal = 18.dp)
                     )
