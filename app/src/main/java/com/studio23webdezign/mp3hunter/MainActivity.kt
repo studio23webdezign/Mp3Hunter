@@ -92,6 +92,7 @@ private fun DorkHunterApp() {
 
 @Composable
 private fun DorkHunterContent(player: MediaController) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     var selectedTab by remember { mutableStateOf(AppTab.HOME) }
     var currentTitle by remember { mutableStateOf("Nothing playing") }
     var isPlaying by remember { mutableStateOf(false) }

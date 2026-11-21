@@ -25,7 +25,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
-import androidx.media3.common.Player
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.ui.PlayerView
 import com.studio23webdezign.mp3hunter.ui.theme.VibePalette
