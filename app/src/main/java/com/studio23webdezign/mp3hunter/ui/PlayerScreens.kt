@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -64,6 +65,8 @@ fun Mp3PlayerScreen(
     var speedMenuExpanded by remember { mutableStateOf(false) }
     var shuffleEnabled by remember { mutableStateOf(player.shuffleModeEnabled) }
     var repeatMode by remember { mutableIntStateOf(player.repeatMode) }
+    var sleepTimerMinutes by remember { mutableIntStateOf(0) }
+    var sleepTimerExpanded by remember { mutableStateOf(false) }
 
     DisposableEffect(player) {
         val listener = object : Player.Listener {
@@ -81,6 +84,14 @@ fun Mp3PlayerScreen(
         }
         player.addListener(listener)
         onDispose { player.removeListener(listener) }
+    }
+
+    LaunchedEffect(player, sleepTimerMinutes) {
+        if (sleepTimerMinutes > 0) {
+            delay(sleepTimerMinutes * 60_000L)
+            player.pause()
+            sleepTimerMinutes = 0
+        }
     }
 
     LaunchedEffect(player, isPlaying) {
@@ -205,6 +216,30 @@ fun Mp3PlayerScreen(
                         )
                     }
                 }
+                }
+            }
+            Box {
+                OutlinedButton(
+                    onClick = { sleepTimerExpanded = true },
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = VibePalette.Ice),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, VibePalette.Graphite)
+                ) {
+                    Icon(Icons.Default.Timer, contentDescription = null, modifier = Modifier.size(15.dp))
+                    Spacer(Modifier.width(7.dp))
+                    Text(if (sleepTimerMinutes == 0) "SLEEP TIMER OFF" else "STOP IN ${sleepTimerMinutes} MIN", style = MaterialTheme.typography.labelSmall)
+                }
+                DropdownMenu(expanded = sleepTimerExpanded, onDismissRequest = { sleepTimerExpanded = false }, containerColor = Panel) {
+                    listOf(15, 30, 45, 60).forEach { minutes ->
+                        DropdownMenuItem(
+                            text = { Text("${minutes} minutes", color = VibePalette.Pearl) },
+                            onClick = { sleepTimerMinutes = minutes; sleepTimerExpanded = false }
+                        )
+                    }
+                    DropdownMenuItem(
+                        text = { Text("Turn timer off", color = SecondaryText) },
+                        onClick = { sleepTimerMinutes = 0; sleepTimerExpanded = false }
+                    )
                 }
             }
             if (player.mediaItemCount > 1) {
