@@ -15,6 +15,11 @@ import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.Shuffle
+import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -56,10 +61,14 @@ fun Mp3PlayerScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var playbackSpeed by remember { mutableFloatStateOf(1f) }
     var speedMenuExpanded by remember { mutableStateOf(false) }
+    var shuffleEnabled by remember { mutableStateOf(player.shuffleModeEnabled) }
+    var repeatMode by remember { mutableIntStateOf(player.repeatMode) }
 
     DisposableEffect(player) {
         val listener = object : Player.Listener {
             override fun onIsPlayingChanged(playing: Boolean) { isPlaying = playing }
+            override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) { shuffleEnabled = shuffleModeEnabled }
+            override fun onRepeatModeChanged(repeatModeValue: Int) { repeatMode = repeatModeValue }
             override fun onPlaybackStateChanged(state: Int) {
                 duration = player.duration.takeIf { it > 0 } ?: 0L
                 if (state == Player.STATE_READY) error = null
@@ -146,8 +155,8 @@ fun Mp3PlayerScreen(
                 Text(formatTime(duration), color = SecondaryText, style = MaterialTheme.typography.labelSmall)
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { player.seekTo(0) }, enabled = player.currentMediaItem != null) {
-                    Icon(Icons.Default.Stop, contentDescription = "Restart", tint = VibePalette.Pearl)
+                IconButton(onClick = { player.seekToPreviousMediaItem() }, enabled = player.hasPreviousMediaItem()) {
+                    Icon(Icons.Default.SkipPrevious, contentDescription = "Previous track", tint = VibePalette.Pearl)
                 }
                 FilledIconButton(
                     onClick = { if (player.isPlaying) player.pause() else player.play() },
@@ -157,11 +166,30 @@ fun Mp3PlayerScreen(
                 ) {
                     Icon(if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow, contentDescription = if (isPlaying) "Pause" else "Play", modifier = Modifier.size(30.dp))
                 }
-                IconButton(onClick = { player.seekTo((player.currentPosition + 15000).coerceAtMost(duration)) }, enabled = player.currentMediaItem != null) {
-                    Text("+15", color = VibePalette.Pearl, style = MaterialTheme.typography.labelMedium)
+                IconButton(onClick = { player.seekToNextMediaItem() }, enabled = player.hasNextMediaItem()) {
+                    Icon(Icons.Default.SkipNext, contentDescription = "Next track", tint = VibePalette.Pearl)
                 }
             }
-            Box {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = { player.shuffleModeEnabled = !player.shuffleModeEnabled }) {
+                        Icon(Icons.Default.Shuffle, contentDescription = "Shuffle", tint = if (shuffleEnabled) Accent else SecondaryText)
+                    }
+                    IconButton(onClick = {
+                        player.repeatMode = when (player.repeatMode) {
+                            Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
+                            Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
+                            else -> Player.REPEAT_MODE_OFF
+                        }
+                    }) {
+                        Icon(
+                            if (repeatMode == Player.REPEAT_MODE_ONE) Icons.Default.RepeatOne else Icons.Default.Repeat,
+                            contentDescription = "Repeat mode",
+                            tint = if (repeatMode == Player.REPEAT_MODE_OFF) SecondaryText else Accent
+                        )
+                    }
+                }
+                Box {
                 OutlinedButton(
                     onClick = { speedMenuExpanded = true },
                     shape = RoundedCornerShape(8.dp),
@@ -174,6 +202,30 @@ fun Mp3PlayerScreen(
                             text = { Text("${speed}×", color = if (speed == playbackSpeed) Accent else VibePalette.Pearl) },
                             onClick = { playbackSpeed = speed; player.setPlaybackParameters(PlaybackParameters(speed)); speedMenuExpanded = false }
                         )
+                    }
+                }
+                }
+            }
+            if (player.mediaItemCount > 1) {
+                Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                    Text("UP NEXT  /  ${player.mediaItemCount} TRACKS", color = SecondaryText, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp)
+                    (0 until player.mediaItemCount).take(12).forEach { index ->
+                        val queued = player.getMediaItemAt(index)
+                        val queuedTitle = queued.mediaMetadata.title?.toString()
+                            ?: queued.localConfiguration?.uri?.lastPathSegment ?: "Track ${index + 1}"
+                        Surface(
+                            onClick = { player.seekTo(index, 0L); player.play() },
+                            modifier = Modifier.fillMaxWidth(),
+                            color = if (index == player.currentMediaItemIndex) VibePalette.Graphite else Panel,
+                            shape = RoundedCornerShape(7.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, if (index == player.currentMediaItemIndex) Accent else Hairline)
+                        ) {
+                            Row(Modifier.padding(horizontal = 11.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Text("%02d".format(index + 1), color = Accent, style = MaterialTheme.typography.labelSmall)
+                                Text(queuedTitle, modifier = Modifier.weight(1f).padding(horizontal = 10.dp), color = VibePalette.Pearl, style = MaterialTheme.typography.bodySmall, maxLines = 1)
+                                if (index == player.currentMediaItemIndex) Text("PLAYING", color = Accent, style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
                     }
                 }
             }
