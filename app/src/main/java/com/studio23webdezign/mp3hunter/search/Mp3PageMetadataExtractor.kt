@@ -109,7 +109,7 @@ internal object Mp3PageMetadataExtractor {
     }
 
     private fun splitArtistAndTitle(value: String, fallbackArtist: String?): Pair<String, String>? {
-        val parts = value.substringBeforeLast('.', value).split(Regex("\s+[-–—|]\s+"), limit = 2)
+        val parts = value.substringBeforeLast('.', value).split(Regex("""\s+[-–—|]\s+"""), limit = 2)
         if (parts.size != 2) return null
         val left = cleanTitle(parts[0])
         val right = cleanTitle(parts[1])
