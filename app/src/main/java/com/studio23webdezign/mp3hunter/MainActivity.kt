@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import com.studio23webdezign.mp3hunter.ui.HomeScreen
 import com.studio23webdezign.mp3hunter.ui.DorkSearchPanel
 import com.studio23webdezign.mp3hunter.ui.LibraryScreen
 import com.studio23webdezign.mp3hunter.ui.Mp3PlayerScreen
@@ -43,7 +44,7 @@ private val Lime = VibePalette.Champagne
 private val TextMuted = VibePalette.Titanium
 private val Cyan = VibePalette.Pearl
 
-private enum class AppTab(val label: String) { SEARCH("Search"), PLAYER("Player"), LIBRARY("Library") }
+private enum class AppTab(val label: String) { HOME("Home"), SEARCH("Search"), PLAYER("Player"), LIBRARY("Library") }
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -56,7 +57,7 @@ class MainActivity : ComponentActivity() {
 private fun DorkHunterApp() {
     val context = androidx.compose.ui.platform.LocalContext.current
     val player = remember { ExoPlayer.Builder(context).build() }
-    var selectedTab by remember { mutableStateOf(AppTab.SEARCH) }
+    var selectedTab by remember { mutableStateOf(AppTab.HOME) }
     var currentTitle by remember { mutableStateOf("Nothing playing") }
     var isPlaying by remember { mutableStateOf(false) }
     var hasMedia by remember { mutableStateOf(false) }
@@ -121,6 +122,15 @@ private fun DorkHunterApp() {
                 }
 
                 when (selectedTab) {
+                    AppTab.HOME -> HomeScreen(
+                        currentTitle = currentTitle,
+                        hasMedia = hasMedia,
+                        isPlaying = isPlaying,
+                        onOpenSearch = { selectedTab = AppTab.SEARCH },
+                        onOpenPlayer = { selectedTab = AppTab.PLAYER },
+                        onOpenLibrary = { selectedTab = AppTab.LIBRARY },
+                        modifier = Modifier.weight(1f).padding(horizontal = 18.dp)
+                    )
                     AppTab.SEARCH -> Column(Modifier.weight(1f).padding(horizontal = 18.dp)) {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
@@ -190,6 +200,13 @@ private fun DorkHunterApp() {
                 }
 
                 NavigationBar(containerColor = VibePalette.Obsidian, contentColor = TextMuted) {
+                    NavigationBarItem(
+                        selected = selectedTab == AppTab.HOME,
+                        onClick = { selectedTab = AppTab.HOME },
+                        icon = { Icon(Icons.Default.Headphones, contentDescription = null) },
+                        label = { Text("Home", fontSize = 10.sp) },
+                        colors = NavigationBarItemDefaults.colors(selectedIconColor = Lime, selectedTextColor = Lime, indicatorColor = VibePalette.Graphite)
+                    )
                     NavigationBarItem(
                         selected = selectedTab == AppTab.SEARCH,
                         onClick = { selectedTab = AppTab.SEARCH },
