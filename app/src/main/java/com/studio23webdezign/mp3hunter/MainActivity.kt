@@ -191,6 +191,10 @@ private fun DorkHunterContent(player: MediaController) {
                 hasMedia = mediaItem != null
                 val transitionedItem = mediaItem
                 val uri = transitionedItem?.localConfiguration?.uri
+                val sourceMime = if (uri?.scheme == "content") {
+                    runCatching { context.contentResolver.getType(uri) }.getOrNull()
+                } else null
+                isVideo = uri?.let { MediaSourceClassifier.isVideo(it.toString(), sourceMime) } ?: false
                 if (transitionedItem != null && uri != null) {
                     scope.launch(Dispatchers.IO) {
                         database.trackDao().recordSearch(
