@@ -64,6 +64,7 @@ fun Mp3PlayerScreen(
 ) {
     var url by remember { mutableStateOf("") }
     var isPlaying by remember { mutableStateOf(player.isPlaying) }
+    var isBuffering by remember { mutableStateOf(player.playbackState == Player.STATE_BUFFERING) }
     var duration by remember { mutableLongStateOf(0L) }
     var position by remember { mutableLongStateOf(0L) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -78,9 +79,14 @@ fun Mp3PlayerScreen(
     DisposableEffect(player) {
         val listener = object : Player.Listener {
             override fun onIsPlayingChanged(playing: Boolean) { isPlaying = playing }
+            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                position = 0L
+                duration = player.duration.takeIf { it > 0 } ?: 0L
+            }
             override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) { shuffleEnabled = shuffleModeEnabled }
             override fun onRepeatModeChanged(repeatModeValue: Int) { repeatMode = repeatModeValue }
             override fun onPlaybackStateChanged(state: Int) {
+                isBuffering = state == Player.STATE_BUFFERING
                 duration = player.duration.takeIf { it > 0 } ?: 0L
                 if (state == Player.STATE_READY) error = null
                 if (state == Player.STATE_ENDED) isPlaying = false
@@ -125,18 +131,39 @@ fun Mp3PlayerScreen(
                 Text(if (isPlaying) "● LIVE" else "○ STANDBY", color = if (isPlaying) Accent else SecondaryText, style = MaterialTheme.typography.labelSmall)
             }
             if (isVideo) {
-                AndroidView(
-                    factory = { context -> PlayerView(context).apply {
-                        this.player = player
-                        useController = true
-                        setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
-                    } },
-                    update = {
-                        it.player = player
-                        it.resizeMode = videoScaleMode
-                    },
-                    modifier = Modifier.fillMaxWidth().height(215.dp).clip(RoundedCornerShape(10.dp))
-                )
+                Box(
+                    Modifier.fillMaxWidth().height(215.dp).clip(RoundedCornerShape(10.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    AndroidView(
+                        factory = { context -> PlayerView(context).apply {
+                            this.player = player
+                            useController = true
+                            setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
+                        } },
+                        update = {
+                            it.player = player
+                            it.resizeMode = videoScaleMode
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    if (isBuffering) {
+                        Surface(color = Color(0xCC101923), shape = RoundedCornerShape(8.dp)) {
+                            Row(
+                                Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(9.dp)
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    color = VibePalette.Ice,
+                                    strokeWidth = 2.dp
+                                )
+                                Text("BUFFERING", color = VibePalette.Pearl, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.sp)
+                            }
+                        }
+                    }
+                }
                 Box {
                     OutlinedButton(
                         onClick = { videoScaleMenuExpanded = true },
