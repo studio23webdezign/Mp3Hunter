@@ -42,6 +42,7 @@ import androidx.media3.ui.PlayerView
 import com.studio23webdezign.mp3hunter.ui.theme.VibePalette
 import com.studio23webdezign.mp3hunter.data.LocalAudioTrack
 import com.studio23webdezign.mp3hunter.data.SavedTrack
+import com.studio23webdezign.mp3hunter.search.MediaSourceClassifier
 import kotlinx.coroutines.delay
 
 private val Accent = VibePalette.Champagne
@@ -292,9 +293,9 @@ fun Mp3PlayerScreen(
                     val candidate = url.trim()
                     if (candidate.startsWith("https://", true) || candidate.startsWith("http://", true)) {
                         runCatching {
-                            val cleanPath = candidate.substringBefore('?').lowercase()
-                            val videoSource = listOf(".mp4", ".mkv", ".webm", ".mov", ".m4v", ".3gp").any { cleanPath.endsWith(it) }
-                            onVideoChange(videoSource)
+                            val parsed = android.net.Uri.parse(candidate)
+                            require(parsed.host?.isNotBlank() == true) { "Enter a complete media URL with a host." }
+                            onVideoChange(MediaSourceClassifier.isVideo(candidate))
                             player.setMediaItem(MediaItem.fromUri(candidate))
                             player.prepare()
                             player.play()

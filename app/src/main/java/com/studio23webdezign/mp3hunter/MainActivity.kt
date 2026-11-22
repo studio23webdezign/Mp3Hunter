@@ -15,6 +15,7 @@ import com.studio23webdezign.mp3hunter.data.LocalAudioTrack
 import com.studio23webdezign.mp3hunter.data.MediaStoreAudioLibrary
 import com.studio23webdezign.mp3hunter.data.TrackDatabase
 import com.studio23webdezign.mp3hunter.data.SavedTrack
+import com.studio23webdezign.mp3hunter.search.MediaSourceClassifier
 import androidx.room.Room
 import androidx.compose.runtime.collectAsState
 import androidx.activity.ComponentActivity
@@ -216,7 +217,7 @@ private fun DorkHunterContent(player: MediaController) {
     val openMedia = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         uri?.let {
             runCatching { context.contentResolver.takePersistableUriPermission(it, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION) }
-            isVideo = context.contentResolver.getType(it)?.startsWith("video/") == true
+            isVideo = MediaSourceClassifier.isVideo(it.toString(), context.contentResolver.getType(it))
             player.setMediaItem(MediaItem.fromUri(it))
             player.prepare()
             player.play()
