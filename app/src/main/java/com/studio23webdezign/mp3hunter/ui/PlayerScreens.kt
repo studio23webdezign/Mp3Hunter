@@ -39,6 +39,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.ui.PlayerView
+import androidx.media3.ui.AspectRatioFrameLayout
 import com.studio23webdezign.mp3hunter.ui.theme.VibePalette
 import com.studio23webdezign.mp3hunter.data.LocalAudioTrack
 import com.studio23webdezign.mp3hunter.data.SavedTrack
@@ -71,6 +72,8 @@ fun Mp3PlayerScreen(
     var shuffleEnabled by remember { mutableStateOf(player.shuffleModeEnabled) }
     var repeatMode by remember { mutableIntStateOf(player.repeatMode) }
     var sleepTimerExpanded by remember { mutableStateOf(false) }
+    var videoScaleMode by remember { mutableIntStateOf(AspectRatioFrameLayout.RESIZE_MODE_FIT) }
+    var videoScaleMenuExpanded by remember { mutableStateOf(false) }
 
     DisposableEffect(player) {
         val listener = object : Player.Listener {
@@ -128,9 +131,45 @@ fun Mp3PlayerScreen(
                         useController = true
                         setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
                     } },
-                    update = { it.player = player },
+                    update = {
+                        it.player = player
+                        it.resizeMode = videoScaleMode
+                    },
                     modifier = Modifier.fillMaxWidth().height(215.dp).clip(RoundedCornerShape(10.dp))
                 )
+                Box {
+                    OutlinedButton(
+                        onClick = { videoScaleMenuExpanded = true },
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = VibePalette.Ice),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, VibePalette.Graphite)
+                    ) {
+                        Text(
+                            when (videoScaleMode) {
+                                AspectRatioFrameLayout.RESIZE_MODE_ZOOM -> "VIDEO ZOOM"
+                                AspectRatioFrameLayout.RESIZE_MODE_FILL -> "VIDEO STRETCH"
+                                else -> "VIDEO FIT"
+                            },
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = videoScaleMenuExpanded,
+                        onDismissRequest = { videoScaleMenuExpanded = false },
+                        containerColor = Panel
+                    ) {
+                        listOf(
+                            "FIT" to AspectRatioFrameLayout.RESIZE_MODE_FIT,
+                            "CROP / ZOOM" to AspectRatioFrameLayout.RESIZE_MODE_ZOOM,
+                            "STRETCH" to AspectRatioFrameLayout.RESIZE_MODE_FILL
+                        ).forEach { (label, mode) ->
+                            DropdownMenuItem(
+                                text = { Text(label, color = if (videoScaleMode == mode) Accent else VibePalette.Pearl) },
+                                onClick = { videoScaleMode = mode; videoScaleMenuExpanded = false }
+                            )
+                        }
+                    }
+                }
             } else {
                 Box(
                     Modifier.fillMaxWidth().aspectRatio(1.18f).clip(RoundedCornerShape(10.dp))
