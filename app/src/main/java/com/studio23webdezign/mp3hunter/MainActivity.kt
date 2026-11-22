@@ -1,7 +1,23 @@
 package com.studio23webdezign.mp3hunter
 
 import android.net.Uri
+import android.content.ComponentName
 import android.os.Bundle
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
+import com.studio23webdezign.mp3hunter.data.LocalAudioTrack
+import com.studio23webdezign.mp3hunter.data.MediaStoreAudioLibrary
+import com.studio23webdezign.mp3hunter.data.TrackDatabase
+import com.studio23webdezign.mp3hunter.data.SavedTrack
+import com.studio23webdezign.mp3hunter.search.MediaSourceClassifier
+import androidx.room.Room
+import androidx.compose.runtime.collectAsState
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -15,6 +31,9 @@ import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -27,18 +46,24 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
-import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.session.MediaController
+import androidx.media3.session.SessionToken
+import androidx.core.content.ContextCompat
+import com.studio23webdezign.mp3hunter.playback.VibePlaybackService
+import com.studio23webdezign.mp3hunter.ui.HomeScreen
 import com.studio23webdezign.mp3hunter.ui.DorkSearchPanel
 import com.studio23webdezign.mp3hunter.ui.LibraryScreen
 import com.studio23webdezign.mp3hunter.ui.Mp3PlayerScreen
+import com.studio23webdezign.mp3hunter.ui.theme.VibePalette
+import com.studio23webdezign.mp3hunter.ui.theme.VibeTheme
 
-private val Night = Color(0xFF090E17)
-private val SurfaceDark = Color(0xFF121C2A)
-private val Lime = Color(0xFFC7F36B)
-private val TextMuted = Color(0xFF9BA9BA)
-private val Cyan = Color(0xFF69D9D0)
+private val Night = VibePalette.Obsidian
+private val SurfaceDark = VibePalette.Carbon
+private val Lime = VibePalette.Champagne
+private val TextMuted = VibePalette.Titanium
+private val Cyan = VibePalette.Pearl
 
-private enum class AppTab(val label: String) { SEARCH("Search"), PLAYER("Player"), LIBRARY("Library") }
+private enum class AppTab(val label: String) { HOME("Home"), SEARCH("Search"), PLAYER("Player"), LIBRARY("Library") }
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,11 +75,111 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun DorkHunterApp() {
     val context = androidx.compose.ui.platform.LocalContext.current
-    val player = remember { ExoPlayer.Builder(context).build() }
-    var selectedTab by remember { mutableStateOf(AppTab.SEARCH) }
+    var player by remember { mutableStateOf<MediaController?>(null) }
+    DisposableEffect(context) {
+        val token = SessionToken(context, ComponentName(context, VibePlaybackService::class.java))
+        val controllerFuture = MediaController.Builder(context, token).buildAsync()
+        controllerFuture.addListener(
+            { runCatching { player = controllerFuture.get() } },
+            ContextCompat.getMainExecutor(context)
+        )
+        onDispose {
+            MediaController.releaseFuture(controllerFuture)
+            player = null
+        }
+    }
+    val connectedPlayer = player
+    if (connectedPlayer == null) {
+        VibeTheme {
+            Surface(Modifier.fillMaxSize(), color = VibePalette.Obsidian) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        CircularProgressIndicator(color = VibePalette.Ice)
+                        Text("CONNECTING AUDIO ENGINE", color = VibePalette.Titanium, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.5.sp)
+                    }
+                }
+            }
+        }
+        return
+    }
+    DorkHunterContent(connectedPlayer)
+}
+
+@Composable
+private fun DorkHunterContent(player: MediaController) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val database = remember(context) {
+        Room.databaseBuilder(context.applicationContext, TrackDatabase::class.java, "vibe-library.db").build()
+    }
+    DisposableEffect(database) { onDispose { database.close() } }
+    val favoriteUrls by database.trackDao().favoriteUrls().collectAsState(initial = emptyList())
+    val recentTracks by database.trackDao().recentHistory().collectAsState(initial = emptyList())
+    var selectedTab by remember { mutableStateOf(AppTab.HOME) }
     var currentTitle by remember { mutableStateOf("Nothing playing") }
     var isPlaying by remember { mutableStateOf(false) }
     var hasMedia by remember { mutableStateOf(false) }
+    var isVideo by remember { mutableStateOf(false) }
+    var sleepTimerMinutes by remember { mutableIntStateOf(0) }
+    LaunchedEffect(sleepTimerMinutes) {
+        if (sleepTimerMinutes > 0) {
+            delay(sleepTimerMinutes * 60_000L)
+            player.pause()
+            sleepTimerMinutes = 0
+        }
+    }
+    val audioPermission = if (Build.VERSION.SDK_INT >= 33) Manifest.permission.READ_MEDIA_AUDIO else Manifest.permission.READ_EXTERNAL_STORAGE
+    var hasAudioPermission by remember {
+        mutableStateOf(ContextCompat.checkSelfPermission(context, audioPermission) == PackageManager.PERMISSION_GRANTED)
+    }
+    var audioTracks by remember { mutableStateOf(emptyList<LocalAudioTrack>()) }
+    var isScanningLibrary by remember { mutableStateOf(false) }
+    var libraryError by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+    fun toggleFavorite(track: LocalAudioTrack) {
+        scope.launch(Dispatchers.IO) {
+            val key = track.uri.toString()
+            val currentlyFavorite = database.trackDao().isFavorite(key) ?: false
+            database.trackDao().upsert(
+                SavedTrack(
+                    pageUrl = key,
+                    title = track.title,
+                    artist = track.artist,
+                    sourceName = "On-device library",
+                    directAudioUrl = key,
+                    isDownloadAvailable = false,
+                    isFavorite = !currentlyFavorite
+                )
+            )
+        }
+    }
+    fun scanAudioLibrary() {
+        val permissionGranted = ContextCompat.checkSelfPermission(context, audioPermission) == PackageManager.PERMISSION_GRANTED
+        hasAudioPermission = permissionGranted
+        if (!permissionGranted) {
+            libraryError = "Allow audio access to scan music stored on this device. You can also browse for an individual file."
+            return
+        }
+        scope.launch {
+            isScanningLibrary = true
+            libraryError = null
+            try {
+                audioTracks = withContext(Dispatchers.IO) { MediaStoreAudioLibrary.load(context) }
+                if (audioTracks.isEmpty()) libraryError = "No music files were found. Try Browse Device to open an audio or video file directly."
+            } catch (_: SecurityException) {
+                hasAudioPermission = false
+                libraryError = "Audio access was revoked. Allow access and scan again, or browse for a file."
+            } catch (exception: Exception) {
+                libraryError = exception.localizedMessage ?: "The music library could not be read. Please try again."
+            } finally {
+                isScanningLibrary = false
+            }
+        }
+    }
+    val audioPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        hasAudioPermission = granted
+        if (granted) scanAudioLibrary()
+        else libraryError = "Audio permission was not granted. Browse Device still lets you open a file without scanning the library."
+    }
 
     DisposableEffect(player) {
         val listener = object : Player.Listener {
@@ -64,21 +189,39 @@ private fun DorkHunterApp() {
                     ?: mediaItem?.localConfiguration?.uri?.lastPathSegment
                     ?: "Now playing"
                 hasMedia = mediaItem != null
+                val transitionedItem = mediaItem
+                val uri = transitionedItem?.localConfiguration?.uri
+                val sourceMime = if (uri?.scheme == "content") {
+                    runCatching { context.contentResolver.getType(uri) }.getOrNull()
+                } else null
+                isVideo = uri?.let { MediaSourceClassifier.isVideo(it.toString(), sourceMime) } ?: false
+                if (transitionedItem != null && uri != null) {
+                    scope.launch(Dispatchers.IO) {
+                        database.trackDao().recordSearch(
+                            SavedTrack(
+                                pageUrl = uri.toString(),
+                                title = currentTitle,
+                                artist = transitionedItem.mediaMetadata.artist?.toString(),
+                                sourceName = "VIBE PLAYER",
+                                directAudioUrl = uri.toString(),
+                                isDownloadAvailable = false
+                            )
+                        )
+                    }
+                }
             }
             override fun onPlaybackStateChanged(playbackState: Int) {
                 hasMedia = player.currentMediaItem != null
             }
         }
         player.addListener(listener)
-        onDispose {
-            player.removeListener(listener)
-            player.release()
-        }
+        onDispose { player.removeListener(listener) }
     }
 
-    val openAudio = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+    val openMedia = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         uri?.let {
             runCatching { context.contentResolver.takePersistableUriPermission(it, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+            isVideo = MediaSourceClassifier.isVideo(it.toString(), context.contentResolver.getType(it))
             player.setMediaItem(MediaItem.fromUri(it))
             player.prepare()
             player.play()
@@ -87,18 +230,11 @@ private fun DorkHunterApp() {
         }
     }
 
-    MaterialTheme(
-        colorScheme = darkColorScheme(
-            primary = Lime, secondary = Cyan, background = Night, surface = SurfaceDark,
-            surfaceVariant = Color(0xFF1B293A), onPrimary = Night,
-            onBackground = Color(0xFFF5F7FA), onSurface = Color(0xFFF5F7FA),
-            onSurfaceVariant = Color(0xFFD2DBE6)
-        )
-    ) {
+    VibeTheme {
         Surface(modifier = Modifier.fillMaxSize(), color = Night) {
             Column(
                 modifier = Modifier.fillMaxSize().background(
-                    Brush.verticalGradient(listOf(Color(0xFF142438), Night, Night))
+                    Brush.verticalGradient(listOf(VibePalette.Carbon, Night, Night))
                 )
             ) {
                 Row(
@@ -106,13 +242,13 @@ private fun DorkHunterApp() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Surface(modifier = Modifier.size(42.dp), shape = RoundedCornerShape(14.dp), color = Lime) {
-                        Icon(Icons.Default.Search, contentDescription = null, tint = Night, modifier = Modifier.padding(10.dp))
+                        Icon(Icons.Default.Headphones, contentDescription = "VIBE PLAYER", tint = Night, modifier = Modifier.padding(10.dp))
                     }
                     Column(Modifier.weight(1f).padding(start = 11.dp)) {
-                        Text("DORK HUNTER", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
-                        Text("SEARCH  •  PLAY  •  DISCOVER", color = TextMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                        Text("VIBE", color = VibePalette.Pearl, style = androidx.compose.material3.MaterialTheme.typography.displayMedium, letterSpacing = 1.1.sp)
+                        Text("YOUR SOUND. YOUR SPACE.", color = TextMuted, fontSize = 9.sp, fontWeight = FontWeight.Medium, letterSpacing = 1.5.sp)
                     }
-                    Surface(shape = CircleShape, color = Color(0xFF243B2A)) {
+                    Surface(shape = CircleShape, color = VibePalette.Graphite) {
                         Row(Modifier.padding(horizontal = 10.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Bolt, contentDescription = null, tint = Lime, modifier = Modifier.size(13.dp))
                             Text("READY", color = Lime, fontSize = 9.sp, fontWeight = FontWeight.ExtraBold)
@@ -121,6 +257,15 @@ private fun DorkHunterApp() {
                 }
 
                 when (selectedTab) {
+                    AppTab.HOME -> HomeScreen(
+                        currentTitle = currentTitle,
+                        hasMedia = hasMedia,
+                        isPlaying = isPlaying,
+                        onOpenSearch = { selectedTab = AppTab.SEARCH },
+                        onOpenPlayer = { selectedTab = AppTab.PLAYER },
+                        onOpenLibrary = { selectedTab = AppTab.LIBRARY },
+                        modifier = Modifier.weight(1f).padding(horizontal = 18.dp)
+                    )
                     AppTab.SEARCH -> Column(Modifier.weight(1f).padding(horizontal = 18.dp)) {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
@@ -129,33 +274,73 @@ private fun DorkHunterApp() {
                         ) {
                             Column(
                                 Modifier.fillMaxWidth().background(
-                                    Brush.horizontalGradient(listOf(Color(0xFF1A3040), Color(0xFF172333), Color(0xFF182337)))
+                                    Brush.horizontalGradient(listOf(VibePalette.Graphite, VibePalette.Carbon, VibePalette.Carbon))
                                 ).padding(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                                     Icon(Icons.Default.Language, contentDescription = null, tint = Cyan, modifier = Modifier.size(14.dp))
-                                    Text("SEARCH THE OPEN WEB", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.2.sp)
+                                    Text("DISCOVERY ENGINE / 01", color = Cyan, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.4.sp)
                                 }
-                                Text("Find what search engines have indexed.", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold)
-                                Text("Build precise Google dorks, then play audio from a direct link or your device.", color = TextMuted, fontSize = 11.sp, lineHeight = 16.sp)
+                                Text("Search beyond the obvious.", color = Color.White, style = MaterialTheme.typography.headlineMedium)
+                                Text("Targeted web queries. Indexed media. Your player, built in.", color = TextMuted, style = MaterialTheme.typography.bodySmall)
                             }
                         }
                         Spacer(Modifier.height(12.dp))
-                        Text("DORK SEARCH", color = Lime, fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 1.3.sp)
+                        Text("DORK SEARCH", color = Lime, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.5.sp)
                         Spacer(Modifier.height(7.dp))
                         DorkSearchPanel(Modifier.fillMaxWidth().weight(1f).padding(bottom = 8.dp))
                     }
                     AppTab.PLAYER -> Mp3PlayerScreen(
                         player = player,
                         currentTitle = currentTitle,
+                        isVideo = isVideo,
+                        onVideoChange = { isVideo = it },
                         onTitleChange = { currentTitle = it },
+                        sleepTimerMinutes = sleepTimerMinutes,
+                        onSleepTimerMinutesChange = { sleepTimerMinutes = it },
                         modifier = Modifier.weight(1f).padding(horizontal = 18.dp)
                     )
                     AppTab.LIBRARY -> LibraryScreen(
                         currentTitle = currentTitle,
                         hasMedia = hasMedia,
-                        onChooseAudio = { openAudio.launch(arrayOf("audio/*")) },
+                        tracks = audioTracks,
+                        favoriteUrls = favoriteUrls.toSet(),
+                        recentTracks = recentTracks,
+                        isScanning = isScanningLibrary,
+                        libraryError = libraryError,
+                        onToggleFavorite = ::toggleFavorite,
+                        onPlayRecent = { track ->
+                            val uri = track.directAudioUrl ?: track.pageUrl
+                            player.setMediaItem(
+                                MediaItem.Builder().setUri(uri).setMediaMetadata(
+                                    androidx.media3.common.MediaMetadata.Builder()
+                                        .setTitle(track.title).setArtist(track.artist).build()
+                                ).build()
+                            )
+                            player.prepare()
+                            player.play()
+                            selectedTab = AppTab.PLAYER
+                        },
+                        onScanLibrary = {
+                            if (hasAudioPermission) scanAudioLibrary() else audioPermissionLauncher.launch(audioPermission)
+                        },
+                        onPlayTrack = { index ->
+                            val items = audioTracks.map { track ->
+                                MediaItem.Builder().setUri(track.uri).setMediaMetadata(
+                                    androidx.media3.common.MediaMetadata.Builder()
+                                        .setTitle(track.title).setArtist(track.artist).setAlbumTitle(track.album).setArtworkUri(track.albumArtUri).build()
+                                ).build()
+                            }
+                            if (items.isNotEmpty()) {
+                                player.setMediaItems(items, index, 0L)
+                                player.prepare()
+                                player.play()
+                                isVideo = false
+                                selectedTab = AppTab.PLAYER
+                            }
+                        },
+                        onChooseAudio = { openMedia.launch(arrayOf("audio/*", "video/*")) },
                         onOpenPlayer = { selectedTab = AppTab.PLAYER },
                         modifier = Modifier.weight(1f).padding(horizontal = 18.dp)
                     )
@@ -163,7 +348,7 @@ private fun DorkHunterApp() {
 
                 if (hasMedia) {
                     Surface(
-                        color = Color(0xFF172638),
+                        color = VibePalette.Carbon,
                         shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
                     ) {
                         Row(
@@ -177,7 +362,7 @@ private fun DorkHunterApp() {
                             }
                             IconButton(onClick = { if (player.isPlaying) player.pause() else player.play() }) {
                                 Icon(
-                                    imageVector = if (isPlaying) androidx.compose.material.icons.filled.Pause else androidx.compose.material.icons.filled.PlayArrow,
+                                    imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                                     contentDescription = if (isPlaying) "Pause" else "Play",
                                     tint = Lime
                                 )
@@ -187,27 +372,34 @@ private fun DorkHunterApp() {
                     }
                 }
 
-                NavigationBar(containerColor = Color(0xFF0D1724), contentColor = TextMuted) {
+                NavigationBar(containerColor = VibePalette.Obsidian, contentColor = TextMuted) {
+                    NavigationBarItem(
+                        selected = selectedTab == AppTab.HOME,
+                        onClick = { selectedTab = AppTab.HOME },
+                        icon = { Icon(Icons.Default.Headphones, contentDescription = null) },
+                        label = { Text("Home", fontSize = 10.sp) },
+                        colors = NavigationBarItemDefaults.colors(selectedIconColor = Lime, selectedTextColor = Lime, indicatorColor = VibePalette.Graphite)
+                    )
                     NavigationBarItem(
                         selected = selectedTab == AppTab.SEARCH,
                         onClick = { selectedTab = AppTab.SEARCH },
                         icon = { Icon(Icons.Default.Search, contentDescription = null) },
                         label = { Text("Search", fontSize = 10.sp) },
-                        colors = NavigationBarItemDefaults.colors(selectedIconColor = Lime, selectedTextColor = Lime, indicatorColor = Color(0xFF263629))
+                        colors = NavigationBarItemDefaults.colors(selectedIconColor = Lime, selectedTextColor = Lime, indicatorColor = VibePalette.Graphite)
                     )
                     NavigationBarItem(
                         selected = selectedTab == AppTab.PLAYER,
                         onClick = { selectedTab = AppTab.PLAYER },
                         icon = { Icon(Icons.Default.PlayCircle, contentDescription = null) },
                         label = { Text("Player", fontSize = 10.sp) },
-                        colors = NavigationBarItemDefaults.colors(selectedIconColor = Lime, selectedTextColor = Lime, indicatorColor = Color(0xFF263629))
+                        colors = NavigationBarItemDefaults.colors(selectedIconColor = Lime, selectedTextColor = Lime, indicatorColor = VibePalette.Graphite)
                     )
                     NavigationBarItem(
                         selected = selectedTab == AppTab.LIBRARY,
                         onClick = { selectedTab = AppTab.LIBRARY },
                         icon = { Icon(Icons.Default.LibraryMusic, contentDescription = null) },
                         label = { Text("Library", fontSize = 10.sp) },
-                        colors = NavigationBarItemDefaults.colors(selectedIconColor = Lime, selectedTextColor = Lime, indicatorColor = Color(0xFF263629))
+                        colors = NavigationBarItemDefaults.colors(selectedIconColor = Lime, selectedTextColor = Lime, indicatorColor = VibePalette.Graphite)
                     )
                 }
             }

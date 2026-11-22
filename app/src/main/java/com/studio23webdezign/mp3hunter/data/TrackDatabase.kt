@@ -10,6 +10,7 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.RoomDatabase
 import androidx.room.Transaction
+import kotlinx.coroutines.flow.Flow
 
 @Entity(tableName = "tracks")
 data class SavedTrack(
@@ -43,8 +44,17 @@ interface TrackDao {
     @Query("SELECT * FROM tracks WHERE isFavorite = 1 ORDER BY title COLLATE NOCASE")
     suspend fun favorites(): List<SavedTrack>
 
+    @Query("SELECT pageUrl FROM tracks WHERE isFavorite = 1 ORDER BY title COLLATE NOCASE")
+    fun favoriteUrls(): Flow<List<String>>
+
+    @Query("SELECT isFavorite FROM tracks WHERE pageUrl = :url LIMIT 1")
+    suspend fun isFavorite(url: String): Boolean?
+
     @Query("SELECT * FROM tracks ORDER BY lastSeenAt DESC LIMIT 50")
     suspend fun history(): List<SavedTrack>
+
+    @Query("SELECT * FROM tracks WHERE sourceName = 'VIBE PLAYER' ORDER BY lastSeenAt DESC LIMIT 12")
+    fun recentHistory(): Flow<List<SavedTrack>>
 
     @Query("UPDATE tracks SET isFavorite = :favorite WHERE pageUrl = :url")
     suspend fun setFavorite(url: String, favorite: Boolean)

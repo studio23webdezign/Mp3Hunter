@@ -42,9 +42,10 @@ import com.studio23webdezign.mp3hunter.search.dork.DorkQuery
 import com.studio23webdezign.mp3hunter.search.dork.DorkQueryEngine
 import com.studio23webdezign.mp3hunter.search.dork.DorkSearchRequest
 import com.studio23webdezign.mp3hunter.search.dork.GoogleDorkUrlBuilder
+import com.studio23webdezign.mp3hunter.ui.theme.VibePalette
 
-private val DorkLime = Color(0xFFC7F36B)
-private val DorkMuted = Color(0xFF9BA9BA)
+private val DorkLime = VibePalette.Champagne
+private val DorkMuted = VibePalette.Titanium
 
 @Composable
 fun DorkSearchPanel(modifier: Modifier = Modifier) {
@@ -92,7 +93,7 @@ fun DorkSearchPanel(modifier: Modifier = Modifier) {
             placeholder = { Text("e.g. Amapiano, PDF manuals, a topic…") },
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = DorkLime,
-                unfocusedBorderColor = Color(0xFF344357),
+                unfocusedBorderColor = VibePalette.Titanium,
                 focusedLabelColor = DorkLime,
                 cursorColor = DorkLime
             )
@@ -163,7 +164,7 @@ fun DorkSearchPanel(modifier: Modifier = Modifier) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(13.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF203329))
+                colors = CardDefaults.cardColors(containerColor = VibePalette.Graphite)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 13.dp, vertical = 11.dp),
@@ -171,7 +172,7 @@ fun DorkSearchPanel(modifier: Modifier = Modifier) {
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text("${queries.size} SEARCH PATTERNS READY", color = DorkLime, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold)
-                        Text("Ranked combinations · Google compatible", color = Color(0xFFB7C8B8), fontSize = 9.sp)
+                        Text("Ranked combinations · Google compatible", color = VibePalette.Muted, fontSize = 9.sp)
                     }
                     Text("LIVE", color = DorkLime, fontSize = 9.sp, fontWeight = FontWeight.Black)
                 }
@@ -205,7 +206,7 @@ private fun DorkQueryCard(dork: DorkQuery, onCopy: () -> Unit, onOpen: () -> Uni
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(15.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF182638))
+        colors = CardDefaults.cardColors(containerColor = VibePalette.Carbon)
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 13.dp, vertical = 11.dp),
@@ -220,7 +221,7 @@ private fun DorkQueryCard(dork: DorkQuery, onCopy: () -> Unit, onOpen: () -> Uni
                 )
                 Text("·  PRIORITY ${dork.priority}", color = DorkMuted, fontSize = 9.sp)
             }
-            Text(dork.value, color = Color(0xFFEAF0F6), fontSize = 12.sp, lineHeight = 17.sp)
+            Text(dork.value, color = VibePalette.Pearl, fontSize = 12.sp, lineHeight = 17.sp)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TextButton(onClick = onCopy) {
                     Text("COPY QUERY", color = DorkMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
@@ -228,7 +229,7 @@ private fun DorkQueryCard(dork: DorkQuery, onCopy: () -> Unit, onOpen: () -> Uni
                 Button(
                     onClick = onOpen,
                     shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = DorkLime, contentColor = Color(0xFF101710))
+                    colors = ButtonDefaults.buttonColors(containerColor = DorkLime, contentColor = VibePalette.Obsidian)
                 ) {
                     Text("SEARCH GOOGLE", fontSize = 10.sp, fontWeight = FontWeight.Black)
                 }
